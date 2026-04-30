@@ -1,27 +1,33 @@
 import nodemailer from 'nodemailer';
+import dns from 'dns';
 
-const sendEmail  = async (options) => {
-    const transporter = nodemailer.createTransport ({
-          host: 'smtp.gmail.com',  // explicit host instead of service: 'gmail'
-        port: 465,
-        secure: true,            // true for port 465
-        family: 4, 
+// Force all DNS resolution to IPv4 globally — affects entire Node process
+dns.setDefaultResultOrder('ipv4first');
+
+const sendEmail = async (options) => {
+    const transporter = nodemailer.createTransport({
+        host: 'smtp.gmail.com',
+        port: 587,
+        secure: false,
+        family: 4,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS
+        },
+        tls: {
+            rejectUnauthorized: false
         }
     });
 
-    const mailOptions ={
-        from: `"Inventory System" <${process.env.EMAIL_USER}>`,
+    const mailOptions = {
+        from: `"Seyi Inventory System" <${process.env.EMAIL_USER}>`,
         to: options.email,
         subject: options.subject,
         text: options.text || '',
         html: options.html || ''
     };
 
-    await  transporter.sendMail(mailOptions);
+    await transporter.sendMail(mailOptions);
 };
-
 
 export default sendEmail;

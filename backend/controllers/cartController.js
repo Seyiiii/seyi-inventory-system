@@ -82,22 +82,62 @@ export const removeItemFromCart = asyncHandler(async (req, res) => {
         throw new Error('Cart not found');
     }
 
-    const initialLength = cart.items.length;
+    // Filter out the item with this productId
     cart.items = cart.items.filter(item => item.product.toString() !== productId);
 
-    if (cart.items.length === initialLength) {
-        res.status(404);
-        throw new Error('Item not found in your cart');
-    }
-
+    // Recalculate total
+    cart.totalPrice = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
     await cart.save();
+
+    const updatedCart = await Cart.findOne({ user: userId })
+        .populate('items.product');
 
     res.status(200).json({
         message: 'Item removed from cart',
-        cart
+        cart: updatedCart
     });
 });
 
+export const updateCartItem = asyncHandler(async (req, res) => {
+    const { productId } = req.params;
+    const { quantity } = req.body;
+    const userId = req.user.id;
+
+    if (!quantity || quantity < 1) {
+        res.status(400);
+        throw new Error('Quantity must be at least 1')
+    }
+
+    const cart = await Cart.findOne({ user: userId });
+    if (!cart) {
+        res.status(404);
+        throw new Error('Cart not found');
+    }
+
+    const item = cart.items.find(item => item.product.toString() === productId);
+    if (!item) {
+        res.status(400);
+        throw new Error('Item not found in cart');
+    }
+
+    const product = await Product.findById(productId);
+    if (product.stock_quantity < quantity) {
+        res.status(400);
+        throw new Error(`Only ${product.stock_quantity} left in stock.`)
+    }
+
+    item.quantity = quantity;
+    cart.totalPrice = cart.items.reduce((acc, item) => acc + item.price * item.quantity, 0);
+    await cart.save();
+
+    const updatedCart = await Cart.findOne({ user: userId })
+        .populate('items.product');
+
+    res.status(200).json({
+        message: 'Cart updated successfully',
+        cart: updatedCart
+    })
+});
 
 export const clearcart = asyncHandler(async (req, res) => {
     const userId = req.user.id;

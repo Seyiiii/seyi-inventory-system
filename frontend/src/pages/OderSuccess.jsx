@@ -10,7 +10,7 @@ function OrderSuccess() {
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`https://seyi-inventory.onrender.com/api/orders/${orderId}`, {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}`, {
           headers: { Authorization: `Bearer ${userInfo?.token}` }
         });
         const data = await response.json();

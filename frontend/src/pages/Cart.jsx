@@ -13,7 +13,7 @@ function Cart() {
   const fetchMyCart = async () => {
     if (!userInfo?.token) { navigate('/login'); return; }
     try {
-      const response = await fetch('https://seyi-inventory.onrender.com/api/cart', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
         headers: { Authorization: `Bearer ${userInfo.token}` }
       });
       const data = await response.json();
@@ -36,7 +36,7 @@ function Cart() {
   const handleRemove = async (productId) => {
     setUpdatingItem(productId);
     try {
-      const response = await fetch(`https://seyi-inventory.onrender.com/api/cart/${productId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/${productId}`, {
         method: 'DELETE',
         headers: { Authorization: `Bearer ${userInfo.token}` }
       });
@@ -56,7 +56,7 @@ function Cart() {
     if (newQty < 1) return;
     setUpdatingItem(productId);
     try {
-      const response = await fetch(`https://seyi-inventory.onrender.com/api/cart/${productId}`, {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/${productId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',

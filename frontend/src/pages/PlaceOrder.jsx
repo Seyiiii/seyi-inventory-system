@@ -24,7 +24,7 @@ function PlaceOrder() {
 
     const fetchCart = async () => {
       try {
-        const response = await fetch('https://seyi-inventory.onrender.com/api/cart', {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
           headers: { Authorization: `Bearer ${userInfo?.token}` },
         });
         const data = await response.json();
@@ -49,7 +49,7 @@ function PlaceOrder() {
     setError(null);
 
     try {
-      const response = await fetch('https://seyi-inventory.onrender.com/api/orders', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

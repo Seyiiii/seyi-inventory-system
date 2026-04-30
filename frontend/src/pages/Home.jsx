@@ -20,7 +20,7 @@ function Home() {
       try {
         const favorites = JSON.parse(localStorage.getItem('favCategories')) || [];
         const topFav = favorites.length > 0 ? favorites[0] : '';
-        const response = await fetch(`https://seyi-inventory.onrender.com/api/products/recommended?category=${topFav}`);
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/recommended?category=${topFav}`);
         if (!response.ok) throw new Error('Failed');
         const data = await response.json();
         setRecommended(data);
@@ -40,8 +40,8 @@ function Home() {
     try {
       // Build URL — include search if there's a query
       const url = searchQuery
-        ? `https://seyi-inventory.onrender.com/api/products?page=${currentPage}&limit=20&search=${encodeURIComponent(searchQuery)}`
-        : `https://seyi-inventory.onrender.com/api/products?page=${currentPage}&limit=20`;
+        ? `${import.meta.env.VITE_API_URL}/api/products?page=${currentPage}&limit=20&search=${encodeURIComponent(searchQuery)}`
+        : `${import.meta.env.VITE_API_URL}/api/products?page=${currentPage}&limit=20`;
 
       const response = await fetch(url);
       if (!response.ok) throw new Error('Failed to fetch inventory');

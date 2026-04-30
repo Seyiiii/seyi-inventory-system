@@ -18,7 +18,7 @@ export function AuthProvider({ children }) {
         const activeUser = user || userInfo;
         if (!activeUser?.token) { setCartCount(0); return; }
         try {
-            const res = await fetch('https://seyi-inventory.onrender.com/api/cart', {
+            const res = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
                 headers: { Authorization: `Bearer ${activeUser.token}` }
             });
             const data = await res.json();

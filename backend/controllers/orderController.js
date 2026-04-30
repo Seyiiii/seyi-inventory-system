@@ -72,11 +72,16 @@ export const createOrder = asyncHandler(async (req, res) => {
         .map(item => `  • ${item.name}  x${item.quantity}  —  NGN ${(item.price * item.quantity).toLocaleString()}`)
         .join('\n');
 
-   sendEmail({
-        email: req.user.email,
-        subject: `Order Confirmed — ${order.orderNumber} 🎉`,
-        html: orderReceiptTemplate({ name: req.user.name, order })
-    }).catch (err => console.error('Receipt email failed to send:', err));
+    try {
+        await sendEmail({
+            email: req.user.email,
+            subject: `Order Confirmed — ${order.orderNumber} 🎉`,
+            html: orderReceiptTemplate({ name: req.user.name, order })
+        });
+        console.log('Receipt email sent successfully to:', req.user.email);
+    } catch (emailError) {
+        console.error('Receipt email failed:', emailError.message);
+    }
 
     res.status(201).json({
         message: 'Order placed successfully!',

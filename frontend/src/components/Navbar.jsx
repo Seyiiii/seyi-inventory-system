@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import Logo from './Logo';
 
 function Navbar() {
   const { userInfo, logout, cartCount } = useAuth(); // 👈 get cartCount from context
@@ -37,8 +38,8 @@ function Navbar() {
 
           {/* Logo */}
           <div className="flex items-center">
-            <Link to="/" className="text-2xl font-bold tracking-wider text-blue-400 hover:text-blue-300 transition-colors">
-              SEYI<span className="text-white">INVENTORY</span>
+            <Link to="/" className="hover:opacity-80 transition-opacity">
+              <Logo size="md" />
             </Link>
           </div>
 

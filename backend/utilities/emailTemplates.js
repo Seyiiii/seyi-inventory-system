@@ -16,10 +16,10 @@ export const orderReceiptTemplate = ({ name, order }) => {
             </td>
             <td style="padding: 16px; border-bottom: 1px solid #f0f0f0; text-align: right; vertical-align: middle;">
                 <p style="margin: 0; font-weight: 600; color: #059669; font-size: 14px;">
-                    NGN ${(item.price * item.quantity).toLocaleString()}
+                    NGN ${(item.price * item.quantity).toLocaleString('en-NG')}
                 </p>
                 <p style="margin: 4px 0 0; color: #9ca3af; font-size: 12px;">
-                    NGN ${item.price.toLocaleString()} each
+                    NGN ${item.price.toLocaleString('en-NG')} each
                 </p>
             </td>
         </tr>
@@ -67,7 +67,7 @@ export const orderReceiptTemplate = ({ name, order }) => {
                 </table>
 
                 <!-- Total -->
-                <div style="margin-top: 16px; background: #f9fafb; border-radius: 12px; padding: 16px 20px; display: flex; justify-content: space-between; border: 1px solid #e5e7eb;">
+                <div style="margin-top: 16px; background: #f9fafb; border-radius: 12px; padding: 16px 20px; border: 1px solid #e5e7eb;">
                     <div style="display: flex; justify-content: space-between; width: 100%;">
                         <div>
                             <p style="margin: 0; color: #6b7280; font-size: 13px;">Payment Method</p>
@@ -75,7 +75,7 @@ export const orderReceiptTemplate = ({ name, order }) => {
                         </div>
                         <div style="text-align: right;">
                             <p style="margin: 0; color: #6b7280; font-size: 13px;">Order Total</p>
-                            <p style="margin: 4px 0 0; color: #059669; font-weight: 800; font-size: 22px;">NGN ${order.totalPrice.toLocaleString()}</p>
+                            <p style="margin: 4px 0 0; color: #059669; font-weight: 800; font-size: 22px;">NGN ${order.totalPrice.toLocaleString('en-NG')}</p>
                         </div>
                     </div>
                 </div>
@@ -95,7 +95,7 @@ export const orderReceiptTemplate = ({ name, order }) => {
                 <!-- Status -->
                 <div style="margin-top: 24px; background: #ecfdf5; border-radius: 12px; padding: 16px 20px; border: 1px solid #d1fae5; text-align: center;">
                     <p style="margin: 0; color: #065f46; font-size: 14px;">
-                        🚚 <strong>Your order is being processed</strong> and will be delivered soon. We'll notify you when it's on its way!
+                        🚚 <strong>Your order is being processed</strong> and will be delivered soon. We will notify you when it is on its way!
                     </p>
                 </div>
 
@@ -104,10 +104,10 @@ export const orderReceiptTemplate = ({ name, order }) => {
             <!-- Footer -->
             <div style="background: #f9fafb; border-top: 1px solid #e5e7eb; padding: 24px 32px; text-align: center;">
                 <p style="margin: 0; color: #9ca3af; font-size: 13px;">
-                    Questions about your order? Reply to this email and we'll help you out.
+                    Questions about your order? Reply to this email and we will help you out.
                 </p>
                 <p style="margin: 12px 0 0; color: #d1d5db; font-size: 12px;">
-                    © ${new Date().getFullYear()} Seyi Inventory. All rights reserved.
+                    &copy; ${new Date().getFullYear()} Seyi Inventory System. All rights reserved.
                 </p>
             </div>
 

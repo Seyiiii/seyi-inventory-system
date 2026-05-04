@@ -241,7 +241,7 @@ function UsersSection({ token }) {
         setUpd(userId);
         try {
             const res = await fetch(`${API}/auth/users/${userId}/role`, {
-                method: 'PATCH',
+                method: 'PUT',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ role: newRole })
             });

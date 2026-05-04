@@ -79,3 +79,39 @@ export const loginUser = asyncHandler(async (req, res) => {
         throw new Error('Invalid email or password');
     }
 });
+
+export const getAllUsers = asyncHandler(async (req, res) => {
+    const users = await User.find({}).select('-password')
+        .sort({ createdAt: -1 });
+
+    res.status(200).json({
+        users,
+        totalUsers: users.length
+    });
+});
+
+export const updateUserRole = asyncHandler(async (req, res) => {
+    const { role } = req.body;
+    const validRoles = ['user', 'storekeeper', 'manager', 'admin'];
+
+    if (!validRoles.includes(role)) {
+        res.status(400);
+        throw new Error(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
+    }
+
+    const user = await User.findByIdAndUpdate(
+        req.params.id,
+        { role },
+        { returnDocument: 'after', runValidators: true }
+    ).select('-password');
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    res.status(200).json({
+        message: `User role updated to ${role}`,
+        user
+    });
+});

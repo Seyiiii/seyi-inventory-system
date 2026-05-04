@@ -104,7 +104,7 @@ export const deleteProduct = asyncHandler(async (req, res) => {
         throw new Error("Product not found. Cannot delete.");
     }
 
-    if (req.user.role === 'storekepper' && product.user.toString() !== req.user.id) {
+    if (req.user.role === 'storekeeper' && product.user.toString() !== req.user.id) {
         res.status(403);
         throw new Error("You are not authorized to delete a product that you did not create.");
     }
@@ -203,4 +203,20 @@ export const getRecommendations = asyncHandler(async (req, res) => {
     const recommendedProducts = await Product.aggregate(pipeline);
 
     res.status(200).json(recommendedProducts);
+});
+
+export const getProductStats = asyncHandler(async (req, res) => {
+   const [totalProducts, outOfStock, lowStock, categories] = await Promise.all([
+    Product.countDocuments(),
+    Product.countDocuments({ stock_quantity: 0 }),
+    Product.countDocuments({ stock_quantity: {$gt: 0, $lte: 10 } }),
+    Product.distinct('category_id')
+   ]);
+
+    res.status(200).json({
+        totalProducts,
+        outOfStock,
+        lowStock,
+        totalCategories: categories.length
+    });
 });

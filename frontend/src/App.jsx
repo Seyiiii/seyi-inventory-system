@@ -11,13 +11,13 @@ import Payment from "./pages/Payment";
 import PlaceOrder from "./pages/PlaceOrder";
 import MyOrders from "./pages/MyOrders";
 import OrderSuccess from "./pages/OderSuccess";
+import AdminDashboard from "./pages/AdminDashboard"; // 👈 ADD
 
 function App() {
   return (
     <AuthProvider>
       <BrowserRouter>
         <Navbar />
-
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
             <Route path="/" element={<Home />} />
@@ -29,7 +29,8 @@ function App() {
             <Route path="/payment" element={<Payment />} />
             <Route path="/placeorder" element={<PlaceOrder />} />
             <Route path="/my-orders" element={<MyOrders/>} />
-            <Route path="/order-success/:orderId" element={<OrderSuccess />} /> 
+            <Route path="/order-success/:orderId" element={<OrderSuccess />} />
+            <Route path="/admin" element={<AdminDashboard />} /> {/* 👈 ADD */}
           </Routes>
         </main>
       </BrowserRouter>

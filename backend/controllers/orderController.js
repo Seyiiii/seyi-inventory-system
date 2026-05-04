@@ -106,6 +106,47 @@ export const getOrderById = asyncHandler(async (req, res) => {
 });
 
 export const getMyOrders = asyncHandler(async (req, res) => {
-    const orders = await Order.find({ user: req.user.id }).sort({ createdAt: -1 });
+    const orders = await Order.find({ user: req.user.id })
+        .sort({ createdAt: -1 })
+        .populate('user', 'name email')
+        .populate({
+            path: 'orderItems.product',
+            select: 'name price image stock_quantity'
+        });
+
     res.status(200).json({ orders });
+});
+
+export const getAllOrders = asyncHandler(async (req, res) => {
+    const orders = await Order.find({})
+        .populate('user', 'name email role')
+        .sort ({ createdAt: -1 });
+
+    const totalRevenue = orders
+        .filter(o => o.isPaid)
+        .reduce((acc, o) => acc + o.totalPrice, 0);
+
+    res.status(200).json({
+        orders,
+        totalOrders: orders.length,
+        totalRevenue
+    });
+});
+
+export const markedAsDelivered = asyncHandler(async (req, res) => {
+    const order = await Order.findById(req.params.id);
+
+    if (!order) {
+        res.status(404);
+        throw new Error('Order not found');
+    }
+
+    order.isDelivered = true;
+    order.deliveredAt = Date.now();
+    const updatedOrder = await order.save();
+
+    res.status(200).json({
+        message: 'Order marked as delivered',
+        order: updatedOrder
+    });
 });

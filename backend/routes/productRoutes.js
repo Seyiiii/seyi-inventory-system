@@ -7,7 +7,8 @@ import {
     getProductById,
     getLowStockProducts,
     getProductPriceInCurrency,
-    getRecommendations
+    getRecommendations,
+    getProductStats        // 👈 ADD
 } from '../controllers/productController.js';
 import {
     createStockMovement,
@@ -19,10 +20,10 @@ import upload from '../config/cloudinary.js';
 
 const router = express.Router();
 
-
 router.get('/products', getAllProducts);
+router.get('/products/stats', protect, authorize('admin', 'manager'), getProductStats); // 👈 ADD
 router.get('/products/low-stock', protect, authorize('admin', 'manager', 'storekeeper'), getLowStockProducts);
-router.get('/products/recommended', getRecommendations)
+router.get('/products/recommended', getRecommendations);
 router.get('/products/:id', getProductById);
 router.post('/products', protect, authorize('admin', 'storekeeper'), upload.single('image'), createProduct);
 router.patch('/products/:id', protect, authorize('admin', 'storekeeper'), updatedProduct);

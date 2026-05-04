@@ -14,10 +14,10 @@ function Spinner() {
 
 function StatCard({ label, value, color = 'blue', sub }) {
     const colors = {
-        blue:   'bg-blue-50 border-blue-100 text-blue-700',
-        green:  'bg-green-50 border-green-100 text-green-700',
+        blue: 'bg-blue-50 border-blue-100 text-blue-700',
+        green: 'bg-green-50 border-green-100 text-green-700',
         orange: 'bg-orange-50 border-orange-100 text-orange-700',
-        red:    'bg-red-50 border-red-100 text-red-700',
+        red: 'bg-red-50 border-red-100 text-red-700',
         purple: 'bg-purple-50 border-purple-100 text-purple-700',
     };
     return (
@@ -31,10 +31,10 @@ function StatCard({ label, value, color = 'blue', sub }) {
 
 function RoleBadge({ role }) {
     const map = {
-        admin:       'bg-purple-100 text-purple-700',
-        manager:     'bg-blue-100 text-blue-700',
+        admin: 'bg-purple-100 text-purple-700',
+        manager: 'bg-blue-100 text-blue-700',
         storekeeper: 'bg-amber-100 text-amber-700',
-        user:        'bg-gray-100 text-gray-600',
+        user: 'bg-gray-100 text-gray-600',
     };
     return (
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${map[role] || map.user}`}>
@@ -47,15 +47,15 @@ function RoleBadge({ role }) {
 // OVERVIEW / STATS
 // ══════════════════════════════════════════
 function StatsSection({ token }) {
-    const [stats,     setStats]   = useState(null);
-    const [orderData, setOData]   = useState(null);
-    const [loading,   setLoading] = useState(true);
+    const [stats, setStats] = useState(null);
+    const [orderData, setOData] = useState(null);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const h = { Authorization: `Bearer ${token}` };
         Promise.all([
             fetch(`${API}/products/stats`, { headers: h }).then(r => r.json()),
-            fetch(`${API}/orders/all`,     { headers: h }).then(r => r.json()),
+            fetch(`${API}/orders/all`, { headers: h }).then(r => r.json()),
         ]).then(([p, o]) => {
             setStats(p);
             setOData(o);
@@ -65,20 +65,20 @@ function StatsSection({ token }) {
 
     if (loading) return <Spinner />;
 
-    const delivered  = orderData?.orders?.filter(o => o.isDelivered).length  || 0;
-    const processing = orderData?.orders?.filter(o => !o.isDelivered).length || 0;
+    const delivered = orderData?.totalDelivered || 0;
+    const processing = orderData?.totalProcessing || 0;
 
     return (
         <div className="space-y-8">
             <div>
                 <h2 className="text-xl font-bold text-gray-800 mb-4">Overview</h2>
                 <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-                    <StatCard label="Total Revenue"  value={`NGN ${(orderData?.totalRevenue || 0).toLocaleString('en-NG')}`} color="green"  sub="From paid orders" />
-                    <StatCard label="Total Orders"   value={orderData?.totalOrders || 0}  color="blue"   sub={`${processing} processing`} />
-                    <StatCard label="Delivered"      value={delivered}                     color="purple" sub="Orders fulfilled" />
-                    <StatCard label="Total Products" value={stats?.totalProducts || 0}    color="blue" />
-                    <StatCard label="Low Stock"      value={stats?.lowStock || 0}          color="orange" sub="≤ 10 units left" />
-                    <StatCard label="Out of Stock"   value={stats?.outOfStock || 0}        color="red" />
+                    <StatCard label="Total Revenue" value={`NGN ${(orderData?.totalRevenue || 0).toLocaleString('en-NG')}`} color="green" sub="From paid orders" />
+                    <StatCard label="Total Orders" value={orderData?.totalOrders || 0} color="blue" sub={`${processing} processing`} />
+                    <StatCard label="Delivered" value={delivered} color="purple" sub="Orders fulfilled" />
+                    <StatCard label="Total Products" value={stats?.totalProducts || 0} color="blue" />
+                    <StatCard label="Low Stock" value={stats?.lowStock || 0} color="orange" sub="≤ 10 units left" />
+                    <StatCard label="Out of Stock" value={stats?.outOfStock || 0} color="red" />
                 </div>
             </div>
 
@@ -119,10 +119,10 @@ function StatsSection({ token }) {
 // ALL ORDERS
 // ══════════════════════════════════════════
 function OrdersSection({ token, isAdmin }) {
-    const [orders,  setOrders]  = useState([]);
+    const [orders, setOrders] = useState([]);
     const [loading, setLoading] = useState(true);
     const [marking, setMarking] = useState(null);
-    const [search,  setSearch]  = useState('');
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         fetch(`${API}/orders/all`, { headers: { Authorization: `Bearer ${token}` } })
@@ -134,7 +134,7 @@ function OrdersSection({ token, isAdmin }) {
     const markDelivered = async (id) => {
         setMarking(id);
         try {
-            const res  = await fetch(`${API}/orders/${id}/deliver`, {
+            const res = await fetch(`${API}/orders/${id}/deliver`, {
                 method: 'PATCH',
                 headers: { Authorization: `Bearer ${token}` }
             });
@@ -225,10 +225,10 @@ function OrdersSection({ token, isAdmin }) {
 // USERS & PERMISSIONS
 // ══════════════════════════════════════════
 function UsersSection({ token }) {
-    const [users,    setUsers]   = useState([]);
-    const [loading,  setLoading] = useState(true);
-    const [updating, setUpd]     = useState(null);
-    const [search,   setSearch]  = useState('');
+    const [users, setUsers] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [updating, setUpd] = useState(null);
+    const [search, setSearch] = useState('');
 
     useEffect(() => {
         fetch(`${API}/auth/users`, { headers: { Authorization: `Bearer ${token}` } })
@@ -240,7 +240,7 @@ function UsersSection({ token }) {
     const changeRole = async (userId, newRole) => {
         setUpd(userId);
         try {
-            const res  = await fetch(`${API}/auth/users/${userId}/role`, {
+            const res = await fetch(`${API}/auth/users/${userId}/role`, {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
                 body: JSON.stringify({ role: newRole })
@@ -329,11 +329,11 @@ function UsersSection({ token }) {
 // ══════════════════════════════════════════
 function ProductsSection({ token, userRole }) {
     const [products, setProducts] = useState([]);
-    const [loading,  setLoading]  = useState(true);
+    const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(null);
-    const [search,   setSearch]   = useState('');
-    const [modal,    setModal]    = useState(null); // null | 'add' | product object for edit
-    const [saving,   setSaving]   = useState(false);
+    const [search, setSearch] = useState('');
+    const [modal, setModal] = useState(null); // null | 'add' | product object for edit
+    const [saving, setSaving] = useState(false);
     const [categories, setCategories] = useState([]);
 
     // Form state
@@ -359,12 +359,12 @@ function ProductsSection({ token, userRole }) {
 
     const openEdit = (p) => {
         setForm({
-            name:           p.name || '',
-            sku:            p.sku || '',
-            price:          p.price || '',
+            name: p.name || '',
+            sku: p.sku || '',
+            price: p.price || '',
             stock_quantity: p.stock_quantity || '',
-            description:    p.description || '',
-            category_id:    p.category_id?._id || p.category_id || ''
+            description: p.description || '',
+            category_id: p.category_id?._id || p.category_id || ''
         });
         setModal(p); // store the product object so we know the _id
     };
@@ -375,7 +375,7 @@ function ProductsSection({ token, userRole }) {
         setSaving(true);
         try {
             const isEdit = modal !== 'add';
-            const url    = isEdit ? `${API}/products/${modal._id}` : `${API}/products`;
+            const url = isEdit ? `${API}/products/${modal._id}` : `${API}/products`;
             const method = isEdit ? 'PATCH' : 'POST';
 
             // Use FormData so image upload works too
@@ -383,7 +383,7 @@ function ProductsSection({ token, userRole }) {
             Object.entries(form).forEach(([k, v]) => { if (v !== '') formData.append(k, v); });
             if (form.imageFile) formData.append('image', form.imageFile);
 
-            const res  = await fetch(url, {
+            const res = await fetch(url, {
                 method,
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData
@@ -471,11 +471,10 @@ function ProductsSection({ token, userRole }) {
                                     NGN {p.price?.toLocaleString('en-NG')}
                                 </td>
                                 <td className="px-4 py-3 text-center">
-                                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                        p.stock_quantity === 0   ? 'bg-red-100 text-red-700'
-                                        : p.stock_quantity <= 10 ? 'bg-orange-100 text-orange-700'
-                                        : 'bg-green-100 text-green-700'
-                                    }`}>
+                                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${p.stock_quantity === 0 ? 'bg-red-100 text-red-700'
+                                            : p.stock_quantity <= 10 ? 'bg-orange-100 text-orange-700'
+                                                : 'bg-green-100 text-green-700'
+                                        }`}>
                                         {p.stock_quantity} units
                                     </span>
                                 </td>
@@ -632,7 +631,7 @@ function ProductsSection({ token, userRole }) {
 // ══════════════════════════════════════════
 function LowStockSection({ token }) {
     const [products, setProducts] = useState([]);
-    const [loading,  setLoading]  = useState(true);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetch(`${API}/products/low-stock`, { headers: { Authorization: `Bearer ${token}` } })
@@ -673,9 +672,8 @@ function LowStockSection({ token }) {
                                 </div>
                             </div>
                             <div className="flex items-center justify-between">
-                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${
-                                    p.stock_quantity === 0 ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
-                                }`}>
+                                <span className={`text-xs font-bold px-2 py-1 rounded-full ${p.stock_quantity === 0 ? 'bg-red-100 text-red-700' : 'bg-orange-100 text-orange-700'
+                                    }`}>
                                     {p.stock_quantity === 0 ? 'Out of stock' : `${p.stock_quantity} left`}
                                 </span>
                                 <span className="text-green-600 font-bold text-sm">
@@ -695,7 +693,7 @@ function LowStockSection({ token }) {
 // ══════════════════════════════════════════
 function StockMovementsSection({ token }) {
     const [movements, setMovements] = useState([]);
-    const [loading,   setLoading]   = useState(true);
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         fetch(`${API}/stock-movements`, { headers: { Authorization: `Bearer ${token}` } })
@@ -759,8 +757,8 @@ function StockMovementsSection({ token }) {
 // ══════════════════════════════════════════
 export default function AdminDashboard() {
     const { userInfo } = useAuth();
-    const navigate     = useNavigate();
-    const role         = userInfo?.role;
+    const navigate = useNavigate();
+    const role = userInfo?.role;
 
     useEffect(() => {
         if (!userInfo) { navigate('/login'); return; }
@@ -770,12 +768,12 @@ export default function AdminDashboard() {
     }, [userInfo, role, navigate]);
 
     const allTabs = [
-        { id: 'stats',    label: '📊 Overview',           roles: ['admin', 'manager'] },
-        { id: 'orders',   label: '📦 Orders',              roles: ['admin', 'manager'] },
-        { id: 'products', label: '🏷️ Products',            roles: ['admin', 'storekeeper'] },
-        { id: 'stock',    label: '📈 Stock Movements',     roles: ['admin', 'storekeeper'] },
-        { id: 'lowstock', label: '⚠️ Low Stock',           roles: ['admin', 'manager', 'storekeeper'] },
-        { id: 'users',    label: '👥 Users & Permissions', roles: ['admin'] },
+        { id: 'stats', label: '📊 Overview', roles: ['admin', 'manager'] },
+        { id: 'orders', label: '📦 Orders', roles: ['admin', 'manager'] },
+        { id: 'products', label: '🏷️ Products', roles: ['admin', 'storekeeper'] },
+        { id: 'stock', label: '📈 Stock Movements', roles: ['admin', 'storekeeper'] },
+        { id: 'lowstock', label: '⚠️ Low Stock', roles: ['admin', 'manager', 'storekeeper'] },
+        { id: 'users', label: '👥 Users & Permissions', roles: ['admin'] },
     ];
 
     const tabs = allTabs.filter(t => t.roles.includes(role));
@@ -801,11 +799,10 @@ export default function AdminDashboard() {
                             <button
                                 key={tab.id}
                                 onClick={() => setActiveTab(tab.id)}
-                                className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors border-b border-gray-50 last:border-0 ${
-                                    activeTab === tab.id
+                                className={`w-full text-left px-4 py-3 text-sm font-medium transition-colors border-b border-gray-50 last:border-0 ${activeTab === tab.id
                                         ? 'bg-blue-50 text-blue-700 font-bold'
                                         : 'text-gray-600 hover:bg-gray-50'
-                                }`}
+                                    }`}
                             >
                                 {tab.label}
                             </button>
@@ -815,12 +812,12 @@ export default function AdminDashboard() {
 
                 {/* Content */}
                 <div className="flex-1 min-w-0">
-                    {activeTab === 'stats'    && <StatsSection          token={userInfo.token} />}
-                    {activeTab === 'orders'   && <OrdersSection         token={userInfo.token} isAdmin={role === 'admin'} />}
-                    {activeTab === 'products' && <ProductsSection       token={userInfo.token} userRole={role} />}
-                    {activeTab === 'stock'    && <StockMovementsSection token={userInfo.token} />}
-                    {activeTab === 'lowstock' && <LowStockSection       token={userInfo.token} />}
-                    {activeTab === 'users'    && <UsersSection          token={userInfo.token} />}
+                    {activeTab === 'stats' && <StatsSection token={userInfo.token} />}
+                    {activeTab === 'orders' && <OrdersSection token={userInfo.token} isAdmin={role === 'admin'} />}
+                    {activeTab === 'products' && <ProductsSection token={userInfo.token} userRole={role} />}
+                    {activeTab === 'stock' && <StockMovementsSection token={userInfo.token} />}
+                    {activeTab === 'lowstock' && <LowStockSection token={userInfo.token} />}
+                    {activeTab === 'users' && <UsersSection token={userInfo.token} />}
                 </div>
             </div>
         </div>

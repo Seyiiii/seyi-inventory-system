@@ -9,10 +9,30 @@ function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [recommended, setRecommended] = useState([]);
   const [recLoading, setRecLoading] = useState(true);
+  
+  // --- NEW: MASTER CATEGORY STATE ---
+  const [allCategories, setAllCategories] = useState(['All']);
 
   // --- SEARCH STATE ---
   const [searchInput, setSearchInput] = useState('');   // what user is typing
   const [searchQuery, setSearchQuery] = useState('');   // what actually gets sent to backend
+
+  // --- NEW: FETCH MASTER CATEGORY LIST ---
+  useEffect(() => {
+    const fetchCategories = async () => {
+      try {
+        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
+        const data = await response.json();
+        
+        // Extract just the names from the category objects
+        const categoryNames = data.categories.map(c => c.name);
+        setAllCategories(['All', ...categoryNames]);
+      } catch (error) {
+        console.error("Failed to load categories:", error);
+      }
+    };
+    fetchCategories();
+  }, []);
 
   // --- FETCH RECOMMENDATIONS ---
   useEffect(() => {
@@ -81,8 +101,6 @@ function Home() {
     return p.category_id;
   };
 
-  const categories = ['All', ...new Set(products.map(getCategoryName))];
-
   const handleCategoryChange = (category) => {
     setSelectedCategory(category);
     setCurrentPage(1);
@@ -105,7 +123,8 @@ function Home() {
             Categories
           </div>
           <div className="p-2 flex flex-col gap-1">
-            {categories.map((category) => (
+            {/* UPDATED: Mapping over allCategories instead of products */}
+            {allCategories.map((category) => (
               <button
                 key={category}
                 onClick={() => handleCategoryChange(category)}

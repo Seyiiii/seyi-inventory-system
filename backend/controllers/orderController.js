@@ -126,10 +126,15 @@ export const getAllOrders = asyncHandler(async (req, res) => {
         .filter(o => o.isPaid)
         .reduce((acc, o) => acc + o.totalPrice, 0);
 
+    const totalDelivered = orders.filter(o => o.isDelivered).length;
+    const totalProcessing = orders.filter(o => !o.isDelivered).length;
+
     res.status(200).json({
         orders,
         totalOrders: orders.length,
-        totalRevenue
+        totalRevenue,
+        totalDelivered,
+        totalProcessing
     });
 });
 

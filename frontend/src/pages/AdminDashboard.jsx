@@ -332,13 +332,74 @@ function ProductsSection({ token, userRole }) {
     const [loading,  setLoading]  = useState(true);
     const [deleting, setDeleting] = useState(null);
     const [search,   setSearch]   = useState('');
+    const [modal,    setModal]    = useState(null); // null | 'add' | product object for edit
+    const [saving,   setSaving]   = useState(false);
+    const [categories, setCategories] = useState([]);
+
+    // Form state
+    const emptyForm = { name: '', sku: '', price: '', stock_quantity: '', description: '', category_id: '' };
+    const [form, setForm] = useState(emptyForm);
 
     useEffect(() => {
-        fetch(`${API}/products?limit=100`, { headers: { Authorization: `Bearer ${token}` } })
-            .then(r => r.json())
-            .then(d => { setProducts(d.products || []); setLoading(false); })
-            .catch(() => setLoading(false));
+        const h = { Authorization: `Bearer ${token}` };
+        Promise.all([
+            fetch(`${API}/products?limit=100`, { headers: h }).then(r => r.json()),
+            fetch(`${API}/categories`, { headers: h }).then(r => r.json())
+        ]).then(([p, c]) => {
+            setProducts(p.products || []);
+            setCategories(c.categories || c || []);
+            setLoading(false);
+        }).catch(() => setLoading(false));
     }, [token]);
+
+    const openAdd = () => {
+        setForm(emptyForm);
+        setModal('add');
+    };
+
+    const openEdit = (p) => {
+        setForm({
+            name:           p.name || '',
+            sku:            p.sku || '',
+            price:          p.price || '',
+            stock_quantity: p.stock_quantity || '',
+            description:    p.description || '',
+            category_id:    p.category_id?._id || p.category_id || ''
+        });
+        setModal(p); // store the product object so we know the _id
+    };
+
+    const closeModal = () => { setModal(null); setForm(emptyForm); };
+
+    const handleSave = async () => {
+        setSaving(true);
+        try {
+            const isEdit = modal !== 'add';
+            const url    = isEdit ? `${API}/products/${modal._id}` : `${API}/products`;
+            const method = isEdit ? 'PATCH' : 'POST';
+
+            // Use FormData so image upload works too
+            const formData = new FormData();
+            Object.entries(form).forEach(([k, v]) => { if (v !== '') formData.append(k, v); });
+            if (form.imageFile) formData.append('image', form.imageFile);
+
+            const res  = await fetch(url, {
+                method,
+                headers: { Authorization: `Bearer ${token}` },
+                body: formData
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message);
+
+            if (isEdit) {
+                setProducts(prev => prev.map(p => p._id === modal._id ? data.product : p));
+            } else {
+                setProducts(prev => [data.product, ...prev]);
+            }
+            closeModal();
+        } catch (e) { alert(e.message); }
+        finally { setSaving(false); }
+    };
 
     const deleteProduct = async (id) => {
         if (!window.confirm('Are you sure you want to delete this product?')) return;
@@ -363,14 +424,25 @@ function ProductsSection({ token, userRole }) {
 
     return (
         <div>
+            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                 <h2 className="text-xl font-bold text-gray-800">Products ({products.length})</h2>
-                <input
-                    value={search} onChange={e => setSearch(e.target.value)}
-                    placeholder="Search by name or SKU..."
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                />
+                <div className="flex gap-2">
+                    <input
+                        value={search} onChange={e => setSearch(e.target.value)}
+                        placeholder="Search by name or SKU..."
+                        className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full sm:w-56 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    />
+                    <button
+                        onClick={openAdd}
+                        className="bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition whitespace-nowrap"
+                    >
+                        + Add Product
+                    </button>
+                </div>
             </div>
+
+            {/* Table */}
             <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
@@ -379,7 +451,7 @@ function ProductsSection({ token, userRole }) {
                             <th className="text-left px-4 py-3 text-gray-500 font-semibold">SKU</th>
                             <th className="text-right px-4 py-3 text-gray-500 font-semibold">Price</th>
                             <th className="text-center px-4 py-3 text-gray-500 font-semibold">Stock</th>
-                            <th className="text-center px-4 py-3 text-gray-500 font-semibold">Action</th>
+                            <th className="text-center px-4 py-3 text-gray-500 font-semibold">Actions</th>
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -400,21 +472,29 @@ function ProductsSection({ token, userRole }) {
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                     <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                        p.stock_quantity === 0    ? 'bg-red-100 text-red-700'
-                                        : p.stock_quantity <= 10  ? 'bg-orange-100 text-orange-700'
+                                        p.stock_quantity === 0   ? 'bg-red-100 text-red-700'
+                                        : p.stock_quantity <= 10 ? 'bg-orange-100 text-orange-700'
                                         : 'bg-green-100 text-green-700'
                                     }`}>
                                         {p.stock_quantity} units
                                     </span>
                                 </td>
                                 <td className="px-4 py-3 text-center">
-                                    <button
-                                        onClick={() => deleteProduct(p._id)}
-                                        disabled={deleting === p._id}
-                                        className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-                                    >
-                                        {deleting === p._id ? '...' : 'Delete'}
-                                    </button>
+                                    <div className="flex items-center justify-center gap-2">
+                                        <button
+                                            onClick={() => openEdit(p)}
+                                            className="text-xs bg-blue-50 hover:bg-blue-100 text-blue-600 font-semibold px-3 py-1.5 rounded-lg transition"
+                                        >
+                                            Edit
+                                        </button>
+                                        <button
+                                            onClick={() => deleteProduct(p._id)}
+                                            disabled={deleting === p._id}
+                                            className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                                        >
+                                            {deleting === p._id ? '...' : 'Delete'}
+                                        </button>
+                                    </div>
                                 </td>
                             </tr>
                         ))}
@@ -424,6 +504,125 @@ function ProductsSection({ token, userRole }) {
                     </tbody>
                 </table>
             </div>
+
+            {/* ADD / EDIT MODAL */}
+            {modal !== null && (
+                <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
+                    <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="flex items-center justify-between p-6 border-b border-gray-100">
+                            <h3 className="text-lg font-bold text-gray-900">
+                                {modal === 'add' ? 'Add New Product' : `Edit — ${modal.name}`}
+                            </h3>
+                            <button onClick={closeModal} className="text-gray-400 hover:text-gray-600 text-xl font-bold">✕</button>
+                        </div>
+
+                        <div className="p-6 space-y-4">
+                            {/* Name */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
+                                <input
+                                    value={form.name}
+                                    onChange={e => setForm(f => ({ ...f, name: e.target.value }))}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="e.g. Samsung Galaxy S30"
+                                />
+                            </div>
+
+                            {/* SKU */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                                <input
+                                    value={form.sku}
+                                    onChange={e => setForm(f => ({ ...f, sku: e.target.value }))}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    placeholder="e.g. TECH-001"
+                                />
+                            </div>
+
+                            {/* Price + Stock side by side */}
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Price (NGN)</label>
+                                    <input
+                                        type="number"
+                                        value={form.price}
+                                        onChange={e => setForm(f => ({ ...f, price: e.target.value }))}
+                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="e.g. 50000"
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-sm font-medium text-gray-700 mb-1">Stock Quantity</label>
+                                    <input
+                                        type="number"
+                                        value={form.stock_quantity}
+                                        onChange={e => setForm(f => ({ ...f, stock_quantity: e.target.value }))}
+                                        className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        placeholder="e.g. 100"
+                                    />
+                                </div>
+                            </div>
+
+                            {/* Category */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
+                                <select
+                                    value={form.category_id}
+                                    onChange={e => setForm(f => ({ ...f, category_id: e.target.value }))}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                    <option value="">Select category...</option>
+                                    {categories.map(c => (
+                                        <option key={c._id} value={c._id}>{c.name}</option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            {/* Description */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+                                <textarea
+                                    value={form.description}
+                                    onChange={e => setForm(f => ({ ...f, description: e.target.value }))}
+                                    rows={3}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                                    placeholder="Product description..."
+                                />
+                            </div>
+
+                            {/* Image upload */}
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1">
+                                    Product Image {modal !== 'add' && <span className="text-gray-400 font-normal">(leave empty to keep current)</span>}
+                                </label>
+                                <input
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={e => setForm(f => ({ ...f, imageFile: e.target.files[0] }))}
+                                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                            </div>
+                        </div>
+
+                        {/* Footer buttons */}
+                        <div className="flex gap-3 p-6 border-t border-gray-100">
+                            <button
+                                onClick={closeModal}
+                                className="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-lg hover:bg-gray-50 transition text-sm"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2.5 rounded-lg transition text-sm disabled:opacity-50"
+                            >
+                                {saving ? 'Saving...' : modal === 'add' ? 'Add Product' : 'Save Changes'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

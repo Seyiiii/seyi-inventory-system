@@ -329,14 +329,16 @@ function UsersSection({ token }) {
 // ══════════════════════════════════════════
 function ProductsSection({ token, userRole }) {
     const [products, setProducts] = useState([]);
-    const [loading, setLoading] = useState(true);
+    const [loading,  setLoading]  = useState(true);
     const [deleting, setDeleting] = useState(null);
-    const [search, setSearch] = useState('');
-    const [modal, setModal] = useState(null); // null | 'add' | product object for edit
-    const [saving, setSaving] = useState(false);
+    const [search,   setSearch]   = useState('');
+    const [modal,    setModal]    = useState(null); 
+    const [saving,   setSaving]   = useState(false);
     const [categories, setCategories] = useState([]);
+    
+    // 👇 NEW: State to handle and display form errors beautifully
+    const [formError, setFormError] = useState(null); 
 
-    // Form state
     const emptyForm = { name: '', sku: '', price: '', stock_quantity: '', description: '', category_id: '' };
     const [form, setForm] = useState(emptyForm);
 
@@ -353,43 +355,52 @@ function ProductsSection({ token, userRole }) {
     }, [token]);
 
     const openAdd = () => {
+        setFormError(null); // Clear errors
         setForm(emptyForm);
         setModal('add');
     };
 
     const openEdit = (p) => {
+        setFormError(null); // Clear errors
         setForm({
-            name: p.name || '',
-            sku: p.sku || '',
-            price: p.price || '',
+            name:           p.name || '',
+            sku:            p.sku || '',
+            price:          p.price || '',
             stock_quantity: p.stock_quantity || '',
-            description: p.description || '',
-            category_id: p.category_id?._id || p.category_id || ''
+            description:    p.description || '',
+            category_id:    p.category_id?._id || p.category_id || ''
         });
-        setModal(p); // store the product object so we know the _id
+        setModal(p); 
     };
 
-    const closeModal = () => { setModal(null); setForm(emptyForm); };
+    const closeModal = () => { setModal(null); setForm(emptyForm); setFormError(null); };
 
     const handleSave = async () => {
         setSaving(true);
+        setFormError(null); // Clear previous errors
         try {
             const isEdit = modal !== 'add';
-            const url = isEdit ? `${API}/products/${modal._id}` : `${API}/products`;
+            const url    = isEdit ? `${API}/products/${modal._id}` : `${API}/products`;
             const method = isEdit ? 'PATCH' : 'POST';
 
-            // Use FormData so image upload works too
             const formData = new FormData();
-            Object.entries(form).forEach(([k, v]) => { if (v !== '') formData.append(k, v); });
+            
+            // 👇 FIX #1: Don't let 'imageFile' get appended as a raw text field!
+            Object.entries(form).forEach(([k, v]) => { 
+                if (k !== 'imageFile' && v !== '') formData.append(k, v); 
+            });
+            
+            // Append the actual file to the 'image' field expected by multer
             if (form.imageFile) formData.append('image', form.imageFile);
 
-            const res = await fetch(url, {
+            const res  = await fetch(url, {
                 method,
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
+            
+            if (!res.ok) throw new Error(data.message || 'An error occurred while saving.');
 
             if (isEdit) {
                 setProducts(prev => prev.map(p => p._id === modal._id ? data.product : p));
@@ -397,7 +408,10 @@ function ProductsSection({ token, userRole }) {
                 setProducts(prev => [data.product, ...prev]);
             }
             closeModal();
-        } catch (e) { alert(e.message); }
+        } catch (e) { 
+            // 👇 FIX #2: Display the exact backend error on the UI instead of a silent alert
+            setFormError(e.message); 
+        }
         finally { setSaving(false); }
     };
 
@@ -409,9 +423,12 @@ function ProductsSection({ token, userRole }) {
                 method: 'DELETE',
                 headers: { Authorization: `Bearer ${token}` }
             });
-            if (!res.ok) throw new Error('Failed to delete');
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to delete');
             setProducts(prev => prev.filter(p => p._id !== id));
-        } catch (e) { alert(e.message); }
+        } catch (e) { 
+            alert(e.message); 
+        }
         finally { setDeleting(null); }
     };
 
@@ -424,7 +441,6 @@ function ProductsSection({ token, userRole }) {
 
     return (
         <div>
-            {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
                 <h2 className="text-xl font-bold text-gray-800">Products ({products.length})</h2>
                 <div className="flex gap-2">
@@ -442,7 +458,6 @@ function ProductsSection({ token, userRole }) {
                 </div>
             </div>
 
-            {/* Table */}
             <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
                 <table className="w-full text-sm">
                     <thead className="bg-gray-50 border-b border-gray-100">
@@ -451,6 +466,8 @@ function ProductsSection({ token, userRole }) {
                             <th className="text-left px-4 py-3 text-gray-500 font-semibold">SKU</th>
                             <th className="text-right px-4 py-3 text-gray-500 font-semibold">Price</th>
                             <th className="text-center px-4 py-3 text-gray-500 font-semibold">Stock</th>
+                            {/* 👇 FIX #3: New Header for Creator */}
+                            <th className="text-left px-4 py-3 text-gray-500 font-semibold">Created By</th> 
                             <th className="text-center px-4 py-3 text-gray-500 font-semibold">Actions</th>
                         </tr>
                     </thead>
@@ -471,12 +488,18 @@ function ProductsSection({ token, userRole }) {
                                     NGN {p.price?.toLocaleString('en-NG')}
                                 </td>
                                 <td className="px-4 py-3 text-center">
-                                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${p.stock_quantity === 0 ? 'bg-red-100 text-red-700'
-                                            : p.stock_quantity <= 10 ? 'bg-orange-100 text-orange-700'
-                                                : 'bg-green-100 text-green-700'
-                                        }`}>
+                                    <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
+                                        p.stock_quantity === 0   ? 'bg-red-100 text-red-700'
+                                        : p.stock_quantity <= 10 ? 'bg-orange-100 text-orange-700'
+                                        : 'bg-green-100 text-green-700'
+                                    }`}>
                                         {p.stock_quantity} units
                                     </span>
+                                </td>
+                                {/* 👇 FIX #3: Show the Creator's Name and Role Badge */}
+                                <td className="px-4 py-3">
+                                    <span className="font-medium text-gray-800 block mb-1">{p.user?.name || 'Unknown'}</span>
+                                    <RoleBadge role={p.user?.role || 'user'} />
                                 </td>
                                 <td className="px-4 py-3 text-center">
                                     <div className="flex items-center justify-center gap-2">
@@ -498,13 +521,12 @@ function ProductsSection({ token, userRole }) {
                             </tr>
                         ))}
                         {filtered.length === 0 && (
-                            <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No products found</td></tr>
+                            <tr><td colSpan={6} className="px-4 py-8 text-center text-gray-400">No products found</td></tr>
                         )}
                     </tbody>
                 </table>
             </div>
 
-            {/* ADD / EDIT MODAL */}
             {modal !== null && (
                 <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50 p-4">
                     <div className="bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
@@ -516,7 +538,14 @@ function ProductsSection({ token, userRole }) {
                         </div>
 
                         <div className="p-6 space-y-4">
-                            {/* Name */}
+                            
+                            {/* 👇 FIX #2: Beautiful Inline Error Message */}
+                            {formError && (
+                                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm font-medium">
+                                    ⚠️ {formError}
+                                </div>
+                            )}
+
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
                                 <input
@@ -527,7 +556,6 @@ function ProductsSection({ token, userRole }) {
                                 />
                             </div>
 
-                            {/* SKU */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
                                 <input
@@ -538,7 +566,6 @@ function ProductsSection({ token, userRole }) {
                                 />
                             </div>
 
-                            {/* Price + Stock side by side */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div>
                                     <label className="block text-sm font-medium text-gray-700 mb-1">Price (NGN)</label>
@@ -562,7 +589,6 @@ function ProductsSection({ token, userRole }) {
                                 </div>
                             </div>
 
-                            {/* Category */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
                                 <select
@@ -577,7 +603,6 @@ function ProductsSection({ token, userRole }) {
                                 </select>
                             </div>
 
-                            {/* Description */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
                                 <textarea
@@ -589,7 +614,6 @@ function ProductsSection({ token, userRole }) {
                                 />
                             </div>
 
-                            {/* Image upload */}
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1">
                                     Product Image {modal !== 'add' && <span className="text-gray-400 font-normal">(leave empty to keep current)</span>}
@@ -603,7 +627,6 @@ function ProductsSection({ token, userRole }) {
                             </div>
                         </div>
 
-                        {/* Footer buttons */}
                         <div className="flex gap-3 p-6 border-t border-gray-100">
                             <button
                                 onClick={closeModal}

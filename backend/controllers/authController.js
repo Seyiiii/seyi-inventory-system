@@ -99,19 +99,20 @@ export const updateUserRole = asyncHandler(async (req, res) => {
         throw new Error(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
     }
 
-    const user = await User.findByIdAndUpdate(
-        req.params.id,
-        { role },
-        { returnDocument: 'after', runValidators: true }
-    ).select('-password');
+    const user = await User.findById(req.params.id);
 
     if (!user) {
         res.status(404);
         throw new Error('User not found');
     }
 
+    user.role = role;
+    const updatedUser = await user.save();
+
+    updatedUser.password = undefined;
+    
     res.status(200).json({
         message: `User role updated to ${role}`,
-        user
+        user: updatedUser
     });
 });

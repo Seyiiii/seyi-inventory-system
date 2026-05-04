@@ -33,7 +33,7 @@ router.get('/products/:id/price/:currencyCode', getProductPriceInCurrency);
 router.get('/products/:id/stock', protect, authorize('admin', 'storekeeper'), getProductStockMovements);
 
 router.get('/products/:id', getProductById);
-router.patch('/products/:id', protect, authorize('admin', 'storekeeper'), updatedProduct);
+router.patch('/products/:id', protect, authorize('admin', 'storekeeper'), upload.single('image'), updatedProduct);
 router.delete('/products/:id', protect, authorize('admin', 'storekeeper'), deleteProduct);
 
 export default router;

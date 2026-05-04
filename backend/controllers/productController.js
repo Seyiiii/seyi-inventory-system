@@ -79,6 +79,10 @@ export const updatedProduct = asyncHandler(async (req, res) => {
         throw new Error("You  are not authorized to edit a product that you did not create.");
     }
 
+    if (req.file) {
+        req.body.image = req.file.path;
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(
         id,
         req.body,

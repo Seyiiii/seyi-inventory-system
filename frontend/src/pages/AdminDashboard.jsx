@@ -31,6 +31,7 @@ function StatCard({ label, value, color = 'blue', sub }) {
 
 function RoleBadge({ role }) {
     const map = {
+        super_admin: 'bg-red-100 text-red-700 border border-red-200',
         admin: 'bg-purple-100 text-purple-700',
         manager: 'bg-blue-100 text-blue-700',
         storekeeper: 'bg-amber-100 text-amber-700',
@@ -38,7 +39,7 @@ function RoleBadge({ role }) {
     };
     return (
         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full capitalize ${map[role] || map.user}`}>
-            {role}
+            {role.replace('_', ' ')} {/* Formats super_admin to super admin */}
         </span>
     );
 }
@@ -224,10 +225,11 @@ function OrdersSection({ token, isAdmin }) {
 // ══════════════════════════════════════════
 // USERS & PERMISSIONS
 // ══════════════════════════════════════════
-function UsersSection({ token }) {
+function UsersSection({ token, currentUser }) { // 👈 ADDED currentUser prop
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpd] = useState(null);
+    const [deleting, setDeleting] = useState(null); // 👈 ADDED deleting state
     const [search, setSearch] = useState('');
 
     useEffect(() => {
@@ -250,6 +252,22 @@ function UsersSection({ token }) {
             setUsers(prev => prev.map(u => u._id === userId ? data.user : u));
         } catch (e) { alert(e.message); }
         finally { setUpd(null); }
+    };
+
+    // 👇 ADDED Delete Logic
+    const deleteUser = async (userId) => {
+        if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
+        setDeleting(userId);
+        try {
+            const res = await fetch(`${API}/auth/users/${userId}`, {
+                method: 'DELETE',
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to delete');
+            setUsers(prev => prev.filter(u => u._id !== userId)); // Remove from UI
+        } catch (e) { alert(e.message); }
+        finally { setDeleting(null); }
     };
 
     const filtered = users.filter(u =>
@@ -277,6 +295,7 @@ function UsersSection({ token }) {
                             <th className="text-left px-4 py-3 text-gray-500 font-semibold">Joined</th>
                             <th className="text-center px-4 py-3 text-gray-500 font-semibold">Current Role</th>
                             <th className="text-center px-4 py-3 text-gray-500 font-semibold">Change Role</th>
+                            <th className="text-center px-4 py-3 text-gray-500 font-semibold">Actions</th> {/* 👈 New Column */}
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-50">
@@ -302,20 +321,36 @@ function UsersSection({ token }) {
                                 <td className="px-4 py-3 text-center">
                                     <select
                                         value={u.role}
-                                        disabled={updating === u._id}
+                                        disabled={updating === u._id || (u.role === 'super_admin' && currentUser.role !== 'super_admin')}
                                         onChange={e => changeRole(u._id, e.target.value)}
                                         className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
                                     >
+                                        {/* Standard admins cannot make someone a super admin */}
+                                        {u.role === 'super_admin' && <option value="super_admin">super_admin</option>}
                                         <option value="user">user</option>
                                         <option value="storekeeper">storekeeper</option>
                                         <option value="manager">manager</option>
                                         <option value="admin">admin</option>
                                     </select>
                                 </td>
+                                <td className="px-4 py-3 text-center">
+                                    {/* 👇 The Self-Preservation & Hierarchy Rule */}
+                                    {currentUser._id !== u._id && u.role !== 'super_admin' ? (
+                                        <button
+                                            onClick={() => deleteUser(u._id)}
+                                            disabled={deleting === u._id}
+                                            className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
+                                        >
+                                            {deleting === u._id ? '...' : 'Delete'}
+                                        </button>
+                                    ) : (
+                                        <span className="text-xs text-gray-400 italic">Protected</span>
+                                    )}
+                                </td>
                             </tr>
                         ))}
                         {filtered.length === 0 && (
-                            <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-400">No users found</td></tr>
+                            <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No users found</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -785,18 +820,18 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         if (!userInfo) { navigate('/login'); return; }
-        if (!['admin', 'manager', 'storekeeper'].includes(role)) {
+        if (!['super_admin','admin', 'manager', 'storekeeper'].includes(role)) {
             navigate('/');
         }
     }, [userInfo, role, navigate]);
 
     const allTabs = [
-        { id: 'stats', label: '📊 Overview', roles: ['admin', 'manager'] },
-        { id: 'orders', label: '📦 Orders', roles: ['admin', 'manager'] },
-        { id: 'products', label: '🏷️ Products', roles: ['admin', 'storekeeper'] },
-        { id: 'stock', label: '📈 Stock Movements', roles: ['admin', 'storekeeper'] },
-        { id: 'lowstock', label: '⚠️ Low Stock', roles: ['admin', 'manager', 'storekeeper'] },
-        { id: 'users', label: '👥 Users & Permissions', roles: ['admin'] },
+        { id: 'stats', label: '📊 Overview', roles: ['super_admin','admin', 'manager'] },
+        { id: 'orders', label: '📦 Orders', roles: ['super_admin','admin', 'manager'] },
+        { id: 'products', label: '🏷️ Products', roles: ['super_admin','admin', 'storekeeper'] },
+        { id: 'stock', label: '📈 Stock Movements', roles: ['super_admin','admin', 'storekeeper'] },
+        { id: 'lowstock', label: '⚠️ Low Stock', roles: ['super_admin','admin', 'manager', 'storekeeper'] },
+        { id: 'users', label: '👥 Users & Permissions', roles: ['super_admin','admin'] },
     ];
 
     const tabs = allTabs.filter(t => t.roles.includes(role));
@@ -836,11 +871,11 @@ export default function AdminDashboard() {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                     {activeTab === 'stats' && <StatsSection token={userInfo.token} />}
-                    {activeTab === 'orders' && <OrdersSection token={userInfo.token} isAdmin={role === 'admin'} />}
+                    {activeTab === 'orders' && <OrdersSection token={userInfo.token} isAdmin={role === 'admin' || role === 'super_admin'} />}
                     {activeTab === 'products' && <ProductsSection token={userInfo.token} userRole={role} />}
                     {activeTab === 'stock' && <StockMovementsSection token={userInfo.token} />}
                     {activeTab === 'lowstock' && <LowStockSection token={userInfo.token} />}
-                    {activeTab === 'users' && <UsersSection token={userInfo.token} />}
+                    {activeTab === 'users' && <UsersSection token={userInfo.token} currentUser={userInfo}/>}
                 </div>
             </div>
         </div>

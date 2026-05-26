@@ -81,6 +81,11 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 export const getAllUsers = asyncHandler(async (req, res) => {
+    let query = {};
+
+    if (req.user.role === 'admin') {
+        query = { role: { $ne: 'super_admin'} };
+    }
     const users = await User.find({}).select('-password')
         .sort({ createdAt: -1 });
 
@@ -92,11 +97,10 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 
 export const updateUserRole = asyncHandler(async (req, res) => {
     const { role } = req.body;
-    const validRoles = ['user', 'storekeeper', 'manager', 'admin'];
 
-    if (!validRoles.includes(role)) {
-        res.status(400);
-        throw new Error(`Invalid role. Must be one of: ${validRoles.join(', ')}`);
+    if (role === 'super_admin') {
+        res.status(403);
+        throw new Error('Super Admin role can only be assigned via database console')
     }
 
     const user = await User.findById(req.params.id);
@@ -104,6 +108,11 @@ export const updateUserRole = asyncHandler(async (req, res) => {
     if (!user) {
         res.status(404);
         throw new Error('User not found');
+    }
+
+    if (user.role === 'super_admin') {
+        res.status(403);
+        throw new Error('You don not have permission to modify a Super Admin');
     }
 
     user.role = role;
@@ -115,4 +124,30 @@ export const updateUserRole = asyncHandler(async (req, res) => {
         message: `User role updated to ${role}`,
         user: updatedUser
     });
+});
+
+export const deleteUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    // 🔒 BACKEND SECURITY CHECKS
+    // 1. Self-preservation: Prevent an admin from accidentally deleting their own account via API
+    if (user._id.toString() === req.user._id.toString()) {
+        res.status(400);
+        throw new Error('You cannot delete your own account');
+    }
+
+    // 2. Hierarchy rule: Regular admins cannot delete a super_admin
+    if (user.role === 'super_admin' && req.user.role !== 'super_admin') {
+        res.status(403);
+        throw new Error('You do not have permission to delete a Super Admin');
+    }
+
+    await User.deleteOne({ _id: user._id });
+
+    res.status(200).json({ message: 'User deleted successfully' });
 });

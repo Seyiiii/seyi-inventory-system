@@ -21,7 +21,7 @@ import upload from '../config/cloudinary.js';
 
 const router = express.Router();
 
-router.get('/audit-logs', protect, authorize('super_admin'), getAuditLogs);
+router.get('/products/audit-logs', protect, authorize('super_admin'), getAuditLogs);
 router.get('/products/stats', protect, authorize('super_admin', 'admin', 'manager'), getProductStats); // 👈 ADD
 router.get('/products/low-stock', protect, authorize('super_admin', 'admin', 'manager', 'storekeeper'), getLowStockProducts);
 router.get('/products/recommended', getRecommendations);

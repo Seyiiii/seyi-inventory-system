@@ -93,7 +93,7 @@ function Navbar() {
                       📦 My Orders
                     </Link>
 
-                    {(userInfo.role === 'admin' || userInfo.role === 'storekeeper' || userInfo === 'super_admin') && (
+                    {(userInfo.role === 'admin' || userInfo.role === 'storekeeper' || userInfo.role === 'super_admin') && (
                       <Link to="/admin" onClick={() => setDropdownOpen(false)} className="flex items-center px-4 py-2 hover:bg-gray-50 transition-colors text-sm">
                         ⚙️ Dashboard
                       </Link>

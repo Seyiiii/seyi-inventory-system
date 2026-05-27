@@ -1,5 +1,7 @@
 import Product from '../models/productModel.js';
 import asyncHandler from "../middlewares/asyncHandler.js";
+import StockMovement from '../models/stockMovementModel.js';
+import AuditLog from '../models/auditLogModel.js';
 
 
 
@@ -11,6 +13,18 @@ export const createProduct = asyncHandler(async (req, res) => {
     }
 
     const newProduct = await Product.create(req.body);
+
+        if (newProduct.stock_quantity > 0) {
+            await StockMovement.create({
+                product: newProduct._id,
+                user: req.user.id,
+                previous_quantity: 0,
+                new_quantity: newProduct.stock_quantity,
+                quantity_change: newProduct.stock_quantity,
+                type: 'IN'
+            });
+        }
+
     res.status(201).json({
         message: "Product created successfully!!",
         product: newProduct
@@ -83,6 +97,41 @@ export const updatedProduct = asyncHandler(async (req, res) => {
         req.body.image = req.file.path;
     }
 
+    if (req.body.stock_quantity !== undefined) {
+        const newQty = Number(req.body.stock_quantity);
+        const oldQty = product.stock_quantity;
+
+        if (newQty !== oldQty) {
+            const diff = newQty - oldQty;
+            await StockMovement.create({
+                product: id,
+                user: req.user.id,
+                previous_quantity: oldQty,
+                new_quantity: newQty,
+                quantity_change: Math.abs(diff),
+                type: diff > 0 ? 'IN' : 'OUT'
+            });
+        }
+    }
+
+     if (req.body.price && Number(req.body.price) !== product.price) {
+        await AuditLog.create({
+            action: 'PRICE_CHANGE',
+            user: req.user.id,
+            product: id,
+            details: `Price changed from NGN ${product.price} to NGN ${req.body.price}`
+        });
+    }
+
+    if (req.body.name && req.body.name !== product.name) {
+        await AuditLog.create({
+            action: 'NAME_CHANGE',
+            user: req.user.id,
+            product: id,
+            details: `Name changed from ${product.name} to ${req.body.name}`
+        });
+    }
+
     const updatedProduct = await Product.findByIdAndUpdate(
         id,
         req.body,
@@ -112,6 +161,13 @@ export const deleteProduct = asyncHandler(async (req, res) => {
         res.status(403);
         throw new Error("You are not authorized to delete a product that you did not create.");
     }
+
+    await AuditLog.create({
+        action: 'PRODUCT_DELETED',
+        user: req.user.id,
+        product: id,
+        details: `Deleted product: "${product.name}" (SKU: ${product.sku || 'N/A'})`
+    });
 
     await Product.findByIdAndDelete(id);
 

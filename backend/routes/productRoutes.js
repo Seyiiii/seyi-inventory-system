@@ -8,7 +8,7 @@ import {
     getLowStockProducts,
     getProductPriceInCurrency,
     getRecommendations,
-    getProductStats        // 👈 ADD
+    getProductStats,        // 👈 ADD
     getAuditLogs
 } from '../controllers/productController.js';
 import {

@@ -225,12 +225,20 @@ function OrdersSection({ token, isAdmin }) {
 // ══════════════════════════════════════════
 // USERS & PERMISSIONS
 // ══════════════════════════════════════════
-function UsersSection({ token, currentUser }) { // 👈 ADDED currentUser prop
+// ══════════════════════════════════════════
+// USERS & PERMISSIONS
+// ══════════════════════════════════════════
+function UsersSection({ token, currentUser }) {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
     const [updating, setUpd] = useState(null);
-    const [deleting, setDeleting] = useState(null); // 👈 ADDED deleting state
+    const [deleting, setDeleting] = useState(null);
+    
+    // Search, Filter, and Pagination State
     const [search, setSearch] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
+    const [currentPage, setCurrentPage] = useState(1);
+    const usersPerPage = 10;
 
     useEffect(() => {
         fetch(`${API}/auth/users`, { headers: { Authorization: `Bearer ${token}` } })
@@ -254,7 +262,6 @@ function UsersSection({ token, currentUser }) { // 👈 ADDED currentUser prop
         finally { setUpd(null); }
     };
 
-    // 👇 ADDED Delete Logic
     const deleteUser = async (userId) => {
         if (!window.confirm("Are you sure you want to delete this user? This cannot be undone.")) return;
         setDeleting(userId);
@@ -265,95 +272,189 @@ function UsersSection({ token, currentUser }) { // 👈 ADDED currentUser prop
             });
             const data = await res.json();
             if (!res.ok) throw new Error(data.message || 'Failed to delete');
-            setUsers(prev => prev.filter(u => u._id !== userId)); // Remove from UI
+            setUsers(prev => prev.filter(u => u._id !== userId));
         } catch (e) { alert(e.message); }
         finally { setDeleting(null); }
     };
 
-    const filtered = users.filter(u =>
-        u.name?.toLowerCase().includes(search.toLowerCase()) ||
-        u.email?.toLowerCase().includes(search.toLowerCase())
-    );
+    // Derived Data for Filters
+    const filteredUsers = users.filter(u => {
+        const matchesSearch = u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
+        const matchesRole = roleFilter === 'all' || 
+                            (roleFilter === 'staff' && ['super_admin', 'admin', 'manager', 'storekeeper'].includes(u.role)) ||
+                            (roleFilter === 'customers' && u.role === 'user');
+        return matchesSearch && matchesRole;
+    });
+
+    // Pagination Logic
+    const indexOfLastUser = currentPage * usersPerPage;
+    const indexOfFirstUser = indexOfLastUser - usersPerPage;
+    const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
+    const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+
+    // Reset page when filters change
+    useEffect(() => { setCurrentPage(1); }, [search, roleFilter]);
 
     if (loading) return <Spinner />;
 
     return (
-        <div>
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-4">
-                <h2 className="text-xl font-bold text-gray-800">All Users ({users.length})</h2>
+        <div className="space-y-6">
+            {/* Top Dashboard Metrics */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                    <p className="text-sm font-medium text-gray-500">Total Accounts</p>
+                    <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+                </div>
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                    <p className="text-sm font-medium text-gray-500">Internal Staff</p>
+                    <p className="text-2xl font-bold text-blue-600">
+                        {users.filter(u => ['super_admin', 'admin', 'manager', 'storekeeper'].includes(u.role)).length}
+                    </p>
+                </div>
+                <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm">
+                    <p className="text-sm font-medium text-gray-500">Registered Customers</p>
+                    <p className="text-2xl font-bold text-green-600">
+                        {users.filter(u => u.role === 'user').length}
+                    </p>
+                </div>
+            </div>
+
+            {/* Controls Bar */}
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                <div className="flex gap-2 w-full md:w-auto">
+                    {['all', 'staff', 'customers'].map(tab => (
+                        <button
+                            key={tab}
+                            onClick={() => setRoleFilter(tab)}
+                            className={`px-4 py-2 text-sm font-semibold rounded-lg capitalize transition ${
+                                roleFilter === tab ? 'bg-blue-600 text-white shadow-md' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                            }`}
+                        >
+                            {tab}
+                        </button>
+                    ))}
+                </div>
                 <input
                     value={search} onChange={e => setSearch(e.target.value)}
-                    placeholder="Search users..."
-                    className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full sm:w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    placeholder="Search name or email..."
+                    className="w-full md:w-72 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
                 />
             </div>
-            <div className="bg-white rounded-xl border border-gray-100 overflow-x-auto">
-                <table className="w-full text-sm">
-                    <thead className="bg-gray-50 border-b border-gray-100">
-                        <tr>
-                            <th className="text-left px-4 py-3 text-gray-500 font-semibold">User</th>
-                            <th className="text-left px-4 py-3 text-gray-500 font-semibold">Joined</th>
-                            <th className="text-center px-4 py-3 text-gray-500 font-semibold">Current Role</th>
-                            <th className="text-center px-4 py-3 text-gray-500 font-semibold">Change Role</th>
-                            <th className="text-center px-4 py-3 text-gray-500 font-semibold">Actions</th> {/* 👈 New Column */}
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-50">
-                        {filtered.map(u => (
-                            <tr key={u._id} className="hover:bg-gray-50">
-                                <td className="px-4 py-3">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white text-xs font-bold shrink-0">
-                                            {u.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                                        </div>
-                                        <div>
-                                            <p className="font-medium text-gray-800">{u.name}</p>
-                                            <p className="text-gray-400 text-xs">{u.email}</p>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td className="px-4 py-3 text-gray-500">
-                                    {new Date(u.createdAt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                    <RoleBadge role={u.role} />
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                    <select
-                                        value={u.role}
-                                        disabled={updating === u._id || (u.role === 'super_admin' && currentUser.role !== 'super_admin')}
-                                        onChange={e => changeRole(u._id, e.target.value)}
-                                        className="border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50"
-                                    >
-                                        {/* Standard admins cannot make someone a super admin */}
-                                        {u.role === 'super_admin' && <option value="super_admin">super_admin</option>}
-                                        <option value="user">user</option>
-                                        <option value="storekeeper">storekeeper</option>
-                                        <option value="manager">manager</option>
-                                        <option value="admin">admin</option>
-                                    </select>
-                                </td>
-                                <td className="px-4 py-3 text-center">
-                                    {/* 👇 The Self-Preservation & Hierarchy Rule */}
-                                    {currentUser._id !== u._id && u.role !== 'super_admin' ? (
-                                        <button
-                                            onClick={() => deleteUser(u._id)}
-                                            disabled={deleting === u._id}
-                                            className="text-xs bg-red-50 hover:bg-red-100 text-red-600 font-semibold px-3 py-1.5 rounded-lg transition disabled:opacity-50"
-                                        >
-                                            {deleting === u._id ? '...' : 'Delete'}
-                                        </button>
-                                    ) : (
-                                        <span className="text-xs text-gray-400 italic">Protected</span>
-                                    )}
-                                </td>
+
+            {/* User Table Container */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider">Account Details</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider">Join Date</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider text-center">Status/Role</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider text-center">Manage Access</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider text-right">Actions</th>
                             </tr>
-                        ))}
-                        {filtered.length === 0 && (
-                            <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-400">No users found</td></tr>
-                        )}
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {currentUsers.map(u => {
+                                // 🔒 Frontend Security Checks
+                                const isSelf = currentUser._id === u._id;
+                                const isTargetSuperAdmin = u.role === 'super_admin';
+                                const isTargetAdmin = u.role === 'admin';
+                                const iAmSuperAdmin = currentUser.role === 'super_admin';
+                                const iAmAdmin = currentUser.role === 'admin';
+
+                                // Can the current user modify this specific row?
+                                const canModify = !isSelf && !isTargetSuperAdmin && !(iAmAdmin && isTargetAdmin);
+
+                                return (
+                                    <tr key={u._id} className="hover:bg-blue-50/50 transition-colors">
+                                        <td className="px-6 py-4 whitespace-nowrap">
+                                            <div className="flex items-center gap-4">
+                                                <div className="w-10 h-10 rounded-full bg-linear-to-tr from-blue-500 to-blue-700 flex items-center justify-center text-white text-sm font-bold shadow-sm shrink-0">
+                                                    {u.name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                                </div>
+                                                <div>
+                                                    <p className="font-bold text-gray-900">{u.name}</p>
+                                                    <p className="text-gray-500 text-xs mt-0.5">{u.email}</p>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td className="px-6 py-4 text-gray-500 whitespace-nowrap">
+                                            {new Date(u.createdAt).toLocaleDateString('en-NG', { day: 'numeric', month: 'short', year: 'numeric' })}
+                                        </td>
+                                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                                            <RoleBadge role={u.role} />
+                                        </td>
+                                        <td className="px-6 py-4 text-center whitespace-nowrap">
+                                            <select
+                                                value={u.role}
+                                                disabled={!canModify || updating === u._id}
+                                                onChange={e => changeRole(u._id, e.target.value)}
+                                                className={`border rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                                                    canModify ? 'border-gray-300 bg-white hover:border-gray-400 cursor-pointer' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                                                }`}
+                                            >
+                                                {isTargetSuperAdmin && <option value="super_admin">Super Admin</option>}
+                                                <option value="user">User</option>
+                                                <option value="storekeeper">Storekeeper</option>
+                                                <option value="manager">Manager</option>
+                                                {iAmSuperAdmin && <option value="admin">Admin</option>}
+                                            </select>
+                                        </td>
+                                        <td className="px-6 py-4 text-right whitespace-nowrap">
+                                            {canModify ? (
+                                                <button
+                                                    onClick={() => deleteUser(u._id)}
+                                                    disabled={deleting === u._id}
+                                                    className="inline-flex items-center gap-1 text-xs bg-red-50 hover:bg-red-100 text-red-600 font-bold px-4 py-2 rounded-lg transition-colors disabled:opacity-50 border border-red-100"
+                                                >
+                                                    {deleting === u._id ? 'Processing...' : 'Revoke Access'}
+                                                </button>
+                                            ) : (
+                                                <span className="inline-flex items-center gap-1 text-xs bg-gray-100 text-gray-500 font-semibold px-4 py-2 rounded-lg border border-gray-200">
+                                                    🔒 Protected
+                                                </span>
+                                            )}
+                                        </td>
+                                    </tr>
+                                );
+                            })}
+                            {currentUsers.length === 0 && (
+                                <tr>
+                                    <td colSpan={5} className="px-6 py-12 text-center">
+                                        <p className="text-4xl mb-3">🔍</p>
+                                        <p className="text-gray-500 font-medium">No users found matching your criteria</p>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+
+                {/* Pagination Controls */}
+                {totalPages > 1 && (
+                    <div className="bg-gray-50 px-6 py-4 border-t border-gray-200 flex items-center justify-between">
+                        <p className="text-sm text-gray-600">
+                            Showing <span className="font-bold">{indexOfFirstUser + 1}</span> to <span className="font-bold">{Math.min(indexOfLastUser, filteredUsers.length)}</span> of <span className="font-bold">{filteredUsers.length}</span> users
+                        </p>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                                disabled={currentPage === 1}
+                                className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            >
+                                Previous
+                            </button>
+                            <button
+                                onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
+                                disabled={currentPage === totalPages}
+                                className="px-4 py-2 text-sm font-medium border border-gray-300 rounded-lg bg-white hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition"
+                            >
+                                Next
+                            </button>
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -84,7 +84,7 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     let query = {};
 
     if (req.user.role === 'admin') {
-        query = { role: { $ne: 'super_admin'} };
+        query = { role: { $in: ['manager', 'storkeeper', 'user']} };
     }
     const users = await User.find({}).select('-password')
         .sort({ createdAt: -1 });
@@ -113,6 +113,11 @@ export const updateUserRole = asyncHandler(async (req, res) => {
     if (user.role === 'super_admin') {
         res.status(403);
         throw new Error('You don not have permission to modify a Super Admin');
+    }
+
+    if (user.role === 'admin' && req.user.role === 'admin') {
+        res.status(403);
+        throw new Error('Admins do not have permission to modify other Admins');
     }
 
     user.role = role;
@@ -145,6 +150,11 @@ export const deleteUser = asyncHandler(async (req, res) => {
     if (user.role === 'super_admin' && req.user.role !== 'super_admin') {
         res.status(403);
         throw new Error('You do not have permission to delete a Super Admin');
+    }
+
+    if (user.role === 'admin' && req.user.role === 'admin') {
+        res.status(403);
+        throw new Error('Admins do not have permission to delete other Admins');
     }
 
     await User.deleteOne({ _id: user._id });

@@ -9,6 +9,7 @@ import {
     getProductPriceInCurrency,
     getRecommendations,
     getProductStats        // 👈 ADD
+    getAuditLogs
 } from '../controllers/productController.js';
 import {
     createStockMovement,
@@ -24,6 +25,8 @@ router.get('/products/stats', protect, authorize('super_admin', 'admin', 'manage
 router.get('/products/low-stock', protect, authorize('super_admin', 'admin', 'manager', 'storekeeper'), getLowStockProducts);
 router.get('/products/recommended', getRecommendations);
 router.get('/stock-movements', protect, authorize('super_admin', 'admin', 'storekeeper'), getAllStockMovements);
+router.get('/audit-logs', protect, authorize('super_admin'), getAuditLogs);
+
 
 router.get('/products', getAllProducts);
 router.post('/products', protect, authorize('super_admin', 'admin', 'storekeeper'), upload.single('image'), createProduct);

@@ -280,3 +280,14 @@ export const getProductStats = asyncHandler(async (req, res) => {
         totalCategories: categories.length
     });
 });
+
+export const getAuditLogs = asyncHandler(async (req, res) => {
+
+    const logs = await AuditLog.find({})
+        .populate('user', 'name email role')
+        .populate('product', 'name sku')
+        .sort({ createdAt: -1 });
+        .limit(100);
+
+    res.status(200).json(logs);
+});

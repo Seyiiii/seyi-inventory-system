@@ -912,6 +912,108 @@ function StockMovementsSection({ token }) {
 }
 
 // ══════════════════════════════════════════
+// SYSTEM AUDIT LOGS (Super Admin Only)
+// ══════════════════════════════════════════
+function AuditLogsSection({ token }) {
+    const [logs, setLogs] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState('');
+
+    useEffect(() => {
+        fetch(`${API}/products/audit-logs`, { headers: { Authorization: `Bearer ${token}` } })
+            .then(r => r.json())
+            .then(data => { setLogs(data || []); setLoading(false); })
+            .catch(() => setLoading(false));
+    }, [token]);
+
+    const filteredLogs = logs.filter(log => 
+        log.details?.toLowerCase().includes(search.toLowerCase()) || 
+        log.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
+        log.product?.name?.toLowerCase().includes(search.toLowerCase())
+    );
+
+    const getActionBadge = (action) => {
+        switch (action) {
+            case 'PRICE_CHANGE': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700 border border-amber-200">Price Change</span>;
+            case 'NAME_CHANGE': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-blue-100 text-blue-700 border border-blue-200">Name Change</span>;
+            case 'PRODUCT_DELETED': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200">Product Deleted</span>;
+            case 'PRODUCT_CREATED': return <span className="px-3 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700 border border-green-200">Product Created</span>;
+            default: return <span className="px-3 py-1 rounded-full text-xs font-bold bg-gray-100 text-gray-700 border border-gray-200">{action}</span>;
+        }
+    };
+
+    if (loading) return <Spinner />;
+
+    return (
+        <div className="space-y-6">
+            {/* Header & Search */}
+            <div className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h2 className="text-xl font-bold text-gray-900">System Audit Trail</h2>
+                    <p className="text-sm text-gray-500">Tracking all critical system modifications.</p>
+                </div>
+                <input
+                    value={search} onChange={e => setSearch(e.target.value)}
+                    placeholder="Search logs, users, or products..."
+                    className="w-full md:w-80 border border-gray-200 rounded-lg px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-gray-50"
+                />
+            </div>
+
+            {/* Logs Table */}
+            <div className="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
+                <div className="overflow-x-auto">
+                    <table className="w-full text-sm text-left">
+                        <thead className="bg-gray-50 border-b border-gray-200">
+                            <tr>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider">Timestamp</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider">Action</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider">Performed By</th>
+                                <th className="px-6 py-4 font-semibold text-gray-600 tracking-wider">Details</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                            {filteredLogs.map(log => (
+                                <tr key={log._id} className="hover:bg-gray-50/80 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-gray-500">
+                                        <div className="font-medium text-gray-700">
+                                            {new Date(log.createdAt).toLocaleDateString('en-NG')}
+                                        </div>
+                                        <div className="text-xs">
+                                            {new Date(log.createdAt).toLocaleTimeString('en-NG')}
+                                        </div>
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        {getActionBadge(log.action)}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <p className="font-bold text-gray-900">{log.user?.name || 'Unknown User'}</p>
+                                        <p className="text-gray-500 text-xs">{log.user?.role?.replace('_', ' ')}</p>
+                                    </td>
+                                    <td className="px-6 py-4">
+                                        <p className="text-gray-800 font-medium">{log.details}</p>
+                                        {log.product && (
+                                            <p className="text-gray-400 text-xs mt-1">Ref: {log.product.name} (SKU: {log.product.sku})</p>
+                                        )}
+                                    </td>
+                                </tr>
+                            ))}
+                            {filteredLogs.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} className="px-6 py-12 text-center">
+                                        <p className="text-3xl mb-3">🛡️</p>
+                                        <p className="text-gray-500 font-medium">No audit logs found.</p>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    );
+}
+
+// ══════════════════════════════════════════
 // MAIN DASHBOARD SHELL
 // ══════════════════════════════════════════
 export default function AdminDashboard() {
@@ -933,6 +1035,7 @@ export default function AdminDashboard() {
         { id: 'stock', label: '📈 Stock Movements', roles: ['super_admin','admin', 'storekeeper'] },
         { id: 'lowstock', label: '⚠️ Low Stock', roles: ['super_admin','admin', 'manager', 'storekeeper'] },
         { id: 'users', label: '👥 Users & Permissions', roles: ['super_admin','admin'] },
+        { id: 'audit', label: '🛡️ System Logs', roles: ['super_admin'] },
     ];
 
     const tabs = allTabs.filter(t => t.roles.includes(role));
@@ -977,6 +1080,7 @@ export default function AdminDashboard() {
                     {activeTab === 'stock' && <StockMovementsSection token={userInfo.token} />}
                     {activeTab === 'lowstock' && <LowStockSection token={userInfo.token} />}
                     {activeTab === 'users' && <UsersSection token={userInfo.token} currentUser={userInfo}/>}
+                    {activeTab === 'audit' && <AuditLogsSection token={userInfo.token} />}
                 </div>
             </div>
         </div>

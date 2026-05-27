@@ -921,9 +921,24 @@ function AuditLogsSection({ token }) {
 
     useEffect(() => {
         fetch(`${API}/products/audit-logs`, { headers: { Authorization: `Bearer ${token}` } })
-            .then(r => r.json())
-            .then(data => { setLogs(data || []); setLoading(false); })
-            .catch(() => setLoading(false));
+            .then(async (r) => {
+                // If the backend returns an error (400, 404, 500), don't try to parse it as normal data!
+                if (!r.ok) {
+                    console.error("Failed to fetch audit logs. Status:", r.status);
+                    return []; // Return an empty array to prevent crashes
+                }
+                return r.json();
+            })
+            .then(data => { 
+                // Double-check that the data is actually an array before saving it to state
+                setLogs(Array.isArray(data) ? data : []); 
+                setLoading(false); 
+            })
+            .catch(err => {
+                console.error("Audit Log Fetch Error:", err);
+                setLogs([]); // Failsafe
+                setLoading(false);
+            });
     }, [token]);
 
     const filteredLogs = logs.filter(log => 

@@ -22,3 +22,5 @@ const auditLogSchema = new mongoose.Schema({
 }, {
         timestamps: true
 });
+
+export default mongoose.model('AuditLog', auditLogSchema);

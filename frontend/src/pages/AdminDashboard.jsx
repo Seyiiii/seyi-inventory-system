@@ -229,7 +229,7 @@ function UsersSection({ token, currentUser }) {
     const [loading, setLoading] = useState(true);
     const [updating, setUpd] = useState(null);
     const [deleting, setDeleting] = useState(null);
-    
+
     const [search, setSearch] = useState('');
     const [roleFilter, setRoleFilter] = useState('all');
     const [currentPage, setCurrentPage] = useState(1);
@@ -274,9 +274,9 @@ function UsersSection({ token, currentUser }) {
 
     const filteredUsers = users.filter(u => {
         const matchesSearch = u.name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase());
-        const matchesRole = roleFilter === 'all' || 
-                            (roleFilter === 'staff' && ['super_admin', 'admin', 'manager', 'storekeeper'].includes(u.role)) ||
-                            (roleFilter === 'customers' && u.role === 'user');
+        const matchesRole = roleFilter === 'all' ||
+            (roleFilter === 'staff' && ['super_admin', 'admin', 'manager', 'storekeeper'].includes(u.role)) ||
+            (roleFilter === 'customers' && u.role === 'user');
         return matchesSearch && matchesRole;
     });
 
@@ -316,9 +316,8 @@ function UsersSection({ token, currentUser }) {
                         <button
                             key={tab}
                             onClick={() => setRoleFilter(tab)}
-                            className={`px-4 py-1.5 text-xs font-bold rounded-md capitalize transition ${
-                                roleFilter === tab ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-900'
-                            }`}
+                            className={`px-4 py-1.5 text-xs font-bold rounded-md capitalize transition ${roleFilter === tab ? 'bg-white text-blue-700 shadow-sm' : 'text-gray-500 hover:text-gray-900'
+                                }`}
                         >
                             {tab}
                         </button>
@@ -377,9 +376,8 @@ function UsersSection({ token, currentUser }) {
                                                 value={u.role}
                                                 disabled={!canModify || updating === u._id}
                                                 onChange={e => changeRole(u._id, e.target.value)}
-                                                className={`border rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 ${
-                                                    canModify ? 'border-gray-200 bg-white hover:border-gray-300 cursor-pointer' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
-                                                }`}
+                                                className={`border rounded-lg px-3 py-1.5 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-blue-500 ${canModify ? 'border-gray-200 bg-white hover:border-gray-300 cursor-pointer' : 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed opacity-60'
+                                                    }`}
                                             >
                                                 {isTargetSuperAdmin && <option value="super_admin">Super Admin</option>}
                                                 <option value="user">User</option>
@@ -404,7 +402,7 @@ function UsersSection({ token, currentUser }) {
                                             )}
                                         </td>
                                     </tr>
-                                return null;
+                                );
                             })}
                         </tbody>
                     </table>
@@ -443,13 +441,13 @@ function UsersSection({ token, currentUser }) {
 // ══════════════════════════════════════════
 function ProductsSection({ token }) {
     const [products, setProducts] = useState([]);
-    const [loading,  setLoading]  = useState(true);
+    const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(null);
-    const [search,   setSearch]   = useState('');
-    const [modal,    setModal]    = useState(null); 
-    const [saving,   setSaving]   = useState(false);
+    const [search, setSearch] = useState('');
+    const [modal, setModal] = useState(null);
+    const [saving, setSaving] = useState(false);
     const [categories, setCategories] = useState([]);
-    const [formError, setFormError] = useState(null); 
+    const [formError, setFormError] = useState(null);
 
     const emptyForm = { name: '', sku: '', price: '', stock_quantity: '', description: '', category_id: '' };
     const [form, setForm] = useState(emptyForm);
@@ -470,14 +468,14 @@ function ProductsSection({ token }) {
     const openEdit = (p) => {
         setFormError(null);
         setForm({
-            name:           p.name || '',
-            sku:            p.sku || '',
-            price:          p.price || '',
+            name: p.name || '',
+            sku: p.sku || '',
+            price: p.price || '',
             stock_quantity: p.stock_quantity || '',
-            description:    p.description || '',
-            category_id:    p.category_id?._id || p.category_id || ''
+            description: p.description || '',
+            category_id: p.category_id?._id || p.category_id || ''
         });
-        setModal(p); 
+        setModal(p);
     };
 
     const closeModal = () => { setModal(null); setForm(emptyForm); setFormError(null); };
@@ -487,16 +485,16 @@ function ProductsSection({ token }) {
         setFormError(null);
         try {
             const isEdit = modal !== 'add';
-            const url    = isEdit ? `${API}/products/${modal._id}` : `${API}/products`;
+            const url = isEdit ? `${API}/products/${modal._id}` : `${API}/products`;
             const method = isEdit ? 'PATCH' : 'POST';
 
             const formData = new FormData();
-            Object.entries(form).forEach(([k, v]) => { 
-                if (k !== 'imageFile' && v !== '') formData.append(k, v); 
+            Object.entries(form).forEach(([k, v]) => {
+                if (k !== 'imageFile' && v !== '') formData.append(k, v);
             });
             if (form.imageFile) formData.append('image', form.imageFile);
 
-            const res  = await fetch(url, {
+            const res = await fetch(url, {
                 method,
                 headers: { Authorization: `Bearer ${token}` },
                 body: formData
@@ -564,7 +562,7 @@ function ProductsSection({ token }) {
                                 <th className="px-6 py-4">SKU / Serial</th>
                                 <th className="px-6 py-4 text-right">Unit Price</th>
                                 <th className="px-6 py-4 text-center">Volume</th>
-                                <th className="px-6 py-4">Registered By</th> 
+                                <th className="px-6 py-4">Registered By</th>
                                 <th className="px-6 py-4 text-center">Controls</th>
                             </tr>
                         </thead>
@@ -585,11 +583,10 @@ function ProductsSection({ token }) {
                                         NGN {p.price?.toLocaleString('en-NG')}
                                     </td>
                                     <td className="px-6 py-4 text-center">
-                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                                            p.stock_quantity === 0   ? 'bg-red-50 text-red-700 border border-red-200'
+                                        <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${p.stock_quantity === 0 ? 'bg-red-50 text-red-700 border border-red-200'
                                             : p.stock_quantity <= 10 ? 'bg-orange-50 text-orange-700 border border-orange-200'
-                                            : 'bg-green-50 text-green-700 border border-green-200'
-                                        }`}>
+                                                : 'bg-green-50 text-green-700 border border-green-200'
+                                            }`}>
                                             {p.stock_quantity} units
                                         </span>
                                     </td>
@@ -880,8 +877,8 @@ function AuditLogsSection({ token }) {
             .catch(() => { setLogs([]); setLoading(false); });
     }, [token]);
 
-    const filteredLogs = logs.filter(log => 
-        log.details?.toLowerCase().includes(search.toLowerCase()) || 
+    const filteredLogs = logs.filter(log =>
+        log.details?.toLowerCase().includes(search.toLowerCase()) ||
         log.user?.name?.toLowerCase().includes(search.toLowerCase()) ||
         log.product?.name?.toLowerCase().includes(search.toLowerCase())
     );
@@ -970,18 +967,18 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         if (!userInfo) { navigate('/login'); return; }
-        if (!['super_admin','admin', 'manager', 'storekeeper'].includes(role)) {
+        if (!['super_admin', 'admin', 'manager', 'storekeeper'].includes(role)) {
             navigate('/');
         }
     }, [userInfo, role, navigate]);
 
     const allTabs = [
-        { id: 'stats', icon: '📊', label: 'Overview', roles: ['super_admin','admin', 'manager'] },
-        { id: 'orders', icon: '📦', label: 'Orders', roles: ['super_admin','admin', 'manager'] },
-        { id: 'products', icon: '🏷️', label: 'Products', roles: ['super_admin','admin', 'storekeeper'] },
-        { id: 'stock', icon: '📈', label: 'Stock Movements', roles: ['super_admin','admin', 'storekeeper'] },
-        { id: 'lowstock', icon: '⚠️', label: 'Low Stock', roles: ['super_admin','admin', 'manager', 'storekeeper'] },
-        { id: 'users', icon: '👥', label: 'Users & Permissions', roles: ['super_admin','admin'] },
+        { id: 'stats', icon: '📊', label: 'Overview', roles: ['super_admin', 'admin', 'manager'] },
+        { id: 'orders', icon: '📦', label: 'Orders', roles: ['super_admin', 'admin', 'manager'] },
+        { id: 'products', icon: '🏷️', label: 'Products', roles: ['super_admin', 'admin', 'storekeeper'] },
+        { id: 'stock', icon: '📈', label: 'Stock Movements', roles: ['super_admin', 'admin', 'storekeeper'] },
+        { id: 'lowstock', icon: '⚠️', label: 'Low Stock', roles: ['super_admin', 'admin', 'manager', 'storekeeper'] },
+        { id: 'users', icon: '👥', label: 'Users & Permissions', roles: ['super_admin', 'admin'] },
         { id: 'audit', icon: '🛡️', label: 'System Logs', roles: ['super_admin'] },
     ];
 
@@ -1008,11 +1005,11 @@ export default function AdminDashboard() {
                 </div>
 
                 <div className="flex flex-col lg:flex-row gap-6 items-start">
-                    
+
                     {/* COLLAPSIBLE ACCORDION SIDEBAR */}
                     <aside className={`shrink-0 transition-all duration-300 ease-in-out sticky top-24 z-10 w-full lg:w-auto`}>
                         <div className={`bg-white rounded-xl border border-gray-200/80 overflow-hidden shadow-sm flex flex-col transition-all duration-300 ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}`}>
-                            
+
                             {/* Collapse Trigger Toggle */}
                             <div className="p-3 border-b border-gray-100 hidden lg:flex items-center justify-end bg-gray-50/30">
                                 <button
@@ -1022,11 +1019,11 @@ export default function AdminDashboard() {
                                 >
                                     {isCollapsed ? (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                                         </svg>
                                     ) : (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                                         </svg>
                                     )}
                                 </button>
@@ -1038,12 +1035,11 @@ export default function AdminDashboard() {
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        title={isCollapsed ? tab.label : ''} 
-                                        className={`flex items-center py-2.5 rounded-lg transition-all whitespace-nowrap border-l-4 ${
-                                            activeTab === tab.id
-                                                ? 'bg-blue-50/80 text-blue-700 font-bold border-l-blue-600 shadow-xs'
-                                                : 'text-gray-600 hover:bg-gray-50 border-l-transparent'
-                                        } ${isCollapsed ? 'lg:justify-center lg:px-0 px-4' : 'justify-start px-4 gap-3'}`}
+                                        title={isCollapsed ? tab.label : ''}
+                                        className={`flex items-center py-2.5 rounded-lg transition-all whitespace-nowrap border-l-4 ${activeTab === tab.id
+                                            ? 'bg-blue-50/80 text-blue-700 font-bold border-l-blue-600 shadow-xs'
+                                            : 'text-gray-600 hover:bg-gray-50 border-l-transparent'
+                                            } ${isCollapsed ? 'lg:justify-center lg:px-0 px-4' : 'justify-start px-4 gap-3'}`}
                                     >
                                         <span className="text-lg leading-none">{tab.icon}</span>
                                         <span className={`text-xs font-semibold ${isCollapsed ? 'lg:hidden block' : 'block'}`}>{tab.label}</span>

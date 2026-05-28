@@ -4,7 +4,7 @@ const auditLogSchema = new mongoose.Schema({
     action: {
         type: String,
         required: true,
-        enum: ['PRICE_CHANGE', 'NAME_CHANGE', 'PRODUCT_DELETED', 'PRODUCT_SAVED']
+        enum: ['PRICE_CHANGE', 'NAME_CHANGE', 'PRODUCT_DELETED', 'PRODUCT_CREATED']
     },
     user: {
         type: mongoose.Schema.Types.ObjectId,
@@ -22,5 +22,3 @@ const auditLogSchema = new mongoose.Schema({
 }, {
         timestamps: true
 });
-
-export default mongoose.model('AuditLog', auditLogSchema);

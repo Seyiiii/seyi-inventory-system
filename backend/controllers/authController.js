@@ -84,9 +84,9 @@ export const getAllUsers = asyncHandler(async (req, res) => {
     let query = {};
 
     if (req.user.role === 'admin') {
-        query = { role: { $in: ['manager', 'storkeeper', 'user']} };
+        query = { role: { $in: ['manager', 'storekeeper', 'user']} };
     }
-    const users = await User.find({}).select('-password')
+    const users = await User.find({query}).select('-password')
         .sort({ createdAt: -1 });
 
     res.status(200).json({

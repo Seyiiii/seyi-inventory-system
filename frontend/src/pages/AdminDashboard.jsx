@@ -967,18 +967,18 @@ export default function AdminDashboard() {
 
     useEffect(() => {
         if (!userInfo) { navigate('/login'); return; }
-        if (!['super_admin', 'admin', 'manager', 'storekeeper'].includes(role)) {
+        if (!['super_admin','admin', 'manager', 'storekeeper'].includes(role)) {
             navigate('/');
         }
     }, [userInfo, role, navigate]);
 
     const allTabs = [
-        { id: 'stats', icon: '📊', label: 'Overview', roles: ['super_admin', 'admin', 'manager'] },
-        { id: 'orders', icon: '📦', label: 'Orders', roles: ['super_admin', 'admin', 'manager'] },
-        { id: 'products', icon: '🏷️', label: 'Products', roles: ['super_admin', 'admin', 'storekeeper'] },
-        { id: 'stock', icon: '📈', label: 'Stock Movements', roles: ['super_admin', 'admin', 'storekeeper'] },
-        { id: 'lowstock', icon: '⚠️', label: 'Low Stock', roles: ['super_admin', 'admin', 'manager', 'storekeeper'] },
-        { id: 'users', icon: '👥', label: 'Users & Permissions', roles: ['super_admin', 'admin'] },
+        { id: 'stats', icon: '📊', label: 'Overview', roles: ['super_admin','admin', 'manager'] },
+        { id: 'orders', icon: '📦', label: 'Orders', roles: ['super_admin','admin', 'manager'] },
+        { id: 'products', icon: '🏷️', label: 'Products', roles: ['super_admin','admin', 'storekeeper'] },
+        { id: 'stock', icon: '📈', label: 'Stock Movements', roles: ['super_admin','admin', 'storekeeper'] },
+        { id: 'lowstock', icon: '⚠️', label: 'Low Stock', roles: ['super_admin','admin', 'manager', 'storekeeper'] },
+        { id: 'users', icon: '👥', label: 'Users & Permissions', roles: ['super_admin','admin'] },
         { id: 'audit', icon: '🛡️', label: 'System Logs', roles: ['super_admin'] },
     ];
 
@@ -988,8 +988,9 @@ export default function AdminDashboard() {
     if (!userInfo) return null;
 
     return (
-        <div className="w-full min-h-screen bg-slate-50/50 -mt-6 -mx-4 px-4 py-8 md:px-8">
-            <div className="max-w-7xl mx-auto">
+        // 👇 Removed max-w-7xl and adjusted wrapper for full-width fluidity
+        <div className="w-full min-h-screen bg-slate-50/50 py-8 px-4 sm:px-6 xl:px-8">
+            <div className="w-full mx-auto">
                 {/* Header Context Banner */}
                 <div className="mb-6 border-b border-gray-200/60 pb-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-2">
                     <div>
@@ -1004,14 +1005,16 @@ export default function AdminDashboard() {
                     </div>
                 </div>
 
-                <div className="flex flex-col lg:flex-row gap-6 items-start">
-
+                {/* 👇 Changed lg:flex-row to md:flex-row to keep sidebar on the left much longer */}
+                <div className="flex flex-col md:flex-row gap-6 items-start">
+                    
                     {/* COLLAPSIBLE ACCORDION SIDEBAR */}
-                    <aside className={`shrink-0 transition-all duration-300 ease-in-out sticky top-24 z-10 w-full lg:w-auto`}>
-                        <div className={`bg-white rounded-xl border border-gray-200/80 overflow-hidden shadow-sm flex flex-col transition-all duration-300 ${isCollapsed ? 'lg:w-20' : 'lg:w-64'}`}>
-
+                    {/* 👇 Updated breakpoints from lg: to md: */}
+                    <aside className={`shrink-0 transition-all duration-300 ease-in-out sticky top-24 z-10 w-full md:w-auto`}>
+                        <div className={`bg-white rounded-xl border border-gray-200/80 overflow-hidden shadow-sm flex flex-col transition-all duration-300 ${isCollapsed ? 'md:w-20' : 'md:w-64'}`}>
+                            
                             {/* Collapse Trigger Toggle */}
-                            <div className="p-3 border-b border-gray-100 hidden lg:flex items-center justify-end bg-gray-50/30">
+                            <div className="p-3 border-b border-gray-100 hidden md:flex items-center justify-end bg-gray-50/30">
                                 <button
                                     onClick={() => setIsCollapsed(!isCollapsed)}
                                     className="p-1.5 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all"
@@ -1019,30 +1022,31 @@ export default function AdminDashboard() {
                                 >
                                     {isCollapsed ? (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 5l7 7-7 7M5 5l7 7-7 7" />
                                         </svg>
                                     ) : (
                                         <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
+                                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 19l-7-7 7-7m8 14l-7-7 7-7" />
                                         </svg>
                                     )}
                                 </button>
                             </div>
 
                             {/* Panel Actions Buttons Map */}
-                            <div className="p-2 flex flex-row lg:flex-col gap-1 overflow-x-auto lg:overflow-x-visible">
+                            <div className="p-2 flex flex-row md:flex-col gap-1 overflow-x-auto md:overflow-x-visible">
                                 {tabs.map(tab => (
                                     <button
                                         key={tab.id}
                                         onClick={() => setActiveTab(tab.id)}
-                                        title={isCollapsed ? tab.label : ''}
-                                        className={`flex items-center py-2.5 rounded-lg transition-all whitespace-nowrap border-l-4 ${activeTab === tab.id
-                                            ? 'bg-blue-50/80 text-blue-700 font-bold border-l-blue-600 shadow-xs'
-                                            : 'text-gray-600 hover:bg-gray-50 border-l-transparent'
-                                            } ${isCollapsed ? 'lg:justify-center lg:px-0 px-4' : 'justify-start px-4 gap-3'}`}
+                                        title={isCollapsed ? tab.label : ''} 
+                                        className={`flex items-center py-2.5 rounded-lg transition-all whitespace-nowrap border-l-4 ${
+                                            activeTab === tab.id
+                                                ? 'bg-blue-50/80 text-blue-700 font-bold border-l-blue-600 shadow-xs'
+                                                : 'text-gray-600 hover:bg-gray-50 border-l-transparent'
+                                        } ${isCollapsed ? 'md:justify-center md:px-0 px-4' : 'justify-start px-4 gap-3'}`}
                                     >
                                         <span className="text-lg leading-none">{tab.icon}</span>
-                                        <span className={`text-xs font-semibold ${isCollapsed ? 'lg:hidden block' : 'block'}`}>{tab.label}</span>
+                                        <span className={`text-xs font-semibold ${isCollapsed ? 'md:hidden block' : 'block'}`}>{tab.label}</span>
                                     </button>
                                 ))}
                             </div>

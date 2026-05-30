@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import logo from '../assets/logo.png';
+
 
 function Login() {
   // 1. The Memory (State) for our form inputs
@@ -54,7 +56,19 @@ function Login() {
   return (
     <div className="flex justify-center items-center mt-12">
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-100">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Sign In</h2>
+        
+        {/* Brand Header */}
+        <div className="flex flex-col items-center justify-center mb-8">
+            <img 
+                src={logo} 
+                alt="Seyi Inventory" 
+                className="w-16 h-16 rounded-full object-contain bg-white shadow-sm border border-gray-200 mb-3" 
+            />
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">
+                SEYI<span className="text-blue-600">INVENTORY</span>
+            </h2>
+            <p className="text-gray-500 font-medium text-sm mt-1">Sign In to Dashboard</p>
+        </div>
         
         {/* If there is an error from the backend, display it here in a red box */}
         {error && (

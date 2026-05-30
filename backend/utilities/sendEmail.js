@@ -1,27 +1,15 @@
-import nodemailer from 'nodemailer';
+import { Resend } from 'resend';
+
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 const sendEmail = async (options) => {
-    // 1. Create the transporter using Google's SMTP settings
-    const transporter = nodemailer.createTransport({
-        host: 'smtp.gmail.com',
-        port: 465, // True for 465, false for other ports
-        secure: true, // Use SSL
-        auth: {
-            user: process.env.EMAIL_USER, // Your actual Gmail address
-            pass: process.env.EMAIL_PASS  // The 16-character App Password (NO SPACES)
-        }
-    });
-
-    // 2. Define the email options
-    const mailOptions = {
-        from: '"Seyi Inventory" ainaseyim@gmail.com', // Replace with your Gmail
+    await resend.emails.send({
+        from: 'Seyi Inventory System <onboarding@resend.com>',
         to: options.email,
         subject: options.subject,
-        html: options.message
-    };
-
-    // 3. Send the email
-    await transporter.sendMail(mailOptions);
+        text: options.text || '',
+        html: options.html || ''
+    });
 };
 
 export default sendEmail;

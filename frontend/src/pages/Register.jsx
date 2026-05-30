@@ -1,5 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import logo from '../assets/logo.png';
+
+
 
 function Register() {
   const [name, setName] = useState('');
@@ -40,7 +43,19 @@ function Register() {
   return (
     <div className="flex justify-center items-center mt-12">
       <div className="w-full max-w-md bg-white p-8 rounded-xl shadow-md border border-gray-100">
-        <h2 className="text-3xl font-bold text-center text-gray-800 mb-6">Create Account</h2>
+        
+        {/* Brand Header */}
+        <div className="flex flex-col items-center justify-center mb-8">
+            <img 
+                src={logo} 
+                alt="Seyi Inventory" 
+                className="w-16 h-16 rounded-full object-contain bg-white shadow-sm border border-gray-200 mb-3" 
+            />
+            <h2 className="text-2xl font-black text-gray-900 tracking-tight uppercase">
+                SEYI<span className="text-blue-600">INVENTORY</span>
+            </h2>
+            <p className="text-gray-500 font-medium text-sm mt-1">Create Account</p>
+        </div>
         
         {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4">{error}</div>}
 

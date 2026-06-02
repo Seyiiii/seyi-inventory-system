@@ -2,7 +2,7 @@ import jwt from "jsonwebtoken";
 import User from  '../models/userModel.js';
 import asyncHandler from "../middlewares/asyncHandler.js";
 import sendEmail from "../utilities/sendEmail.js";
-import { welcomeTemplate, roleChangeTemplate } from "../utilities/emailTemplates.js";
+import { welcomeTemplate, roleUpdateTemplate } from "../utilities/emailTemplates.js";
 
 
 const generateToken = (id) => {

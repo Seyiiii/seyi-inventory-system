@@ -116,3 +116,33 @@ export const updateUserRole = asyncHandler(async (req, res) => {
         user: updatedUser
     });
 });
+
+export const deleteUser = asyncHandler(async (req, res) => {
+    const user = await User.findById(req.params.id);
+
+    if (!user) {
+        res.status(404);
+        throw new Error('User not found');
+    }
+
+    if (user.id.toString() === req.user.id.toString()) {
+        res.status(400);
+        throw new Error('You cannot delete your own account');
+    }
+
+    if (user.role === 'super_admin' && req.user.role !== 'super_admin') {
+        res.status(403);
+        throw new Error('You do not have permission to delete a super admin account');
+    }
+
+    if (user.role === 'admin' && req.user.role === 'admin') {
+        res.status(403);
+        throw new Error('Admins cannot delete other admin accounts');
+    }
+
+    await user.deleteOne({ _id: user._id });
+
+    res.status(200).json({
+        message: 'User deleted successfully'
+    });
+})

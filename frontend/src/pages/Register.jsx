@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
@@ -13,7 +13,13 @@ function Register() {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, userInfo } = useAuth();
+
+  useEffect(() => {
+    if (userInfo) {
+      navigate('/');
+    }
+  }, [navigate, userInfo]);
   
   const submitHandler = async (e) => {
     e.preventDefault();

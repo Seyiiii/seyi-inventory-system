@@ -34,15 +34,19 @@ export const registerUser = asyncHandler(async (req, res) => {
     });
 
     if (user) {
-        try {
-            await sendEmail({
+        setTimeout(() => {
+            sendEmail({
                 email: user.email,
-                subject: 'Welcome to the Inventory System',
-                message: `Hi ${user.name}, \n\nWelcome to our platform. Your account has been created successfully. You are registered in the team as ${user.role}. \n\nBest Regards, \n\nInventory System Team`
-            })
-        } catch (error) {
-            console.error('Email could not be sent out:', error);
-        }
+                subject: 'Welcome to the Inventory System 🎉',
+                html: welcomeTemplate({ name: user.name, role: user.role })
+            }).then(() => {
+                console.log('Welcome email sent successfully to:', user.email);
+            }).catch((error) => {
+                console.error('CRITICAL EMAIL ERROR:', error.message);
+            });
+        }, 0);
+
+        
         res.status(201).json({
             _id: user._id,
             name: user.name,

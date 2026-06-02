@@ -2,6 +2,7 @@ import jwt from "jsonwebtoken";
 import User from  '../models/userModel.js';
 import asyncHandler from "../middlewares/asyncHandler.js";
 import sendEmail from "../utilities/sendEmail.js";
+import { welcomeTemplate, roleChangeTemplate } from "../utilities/emailTemplates.js";
 
 
 const generateToken = (id) => {
@@ -30,7 +31,7 @@ export const registerUser = asyncHandler(async (req, res) => {
         name,
         email,
         password,
-        role
+        role: role || 'user'
     });
 
     if (user) {
@@ -114,6 +115,16 @@ export const updateUserRole = asyncHandler(async (req, res) => {
     const updatedUser = await user.save();
 
     updatedUser.password = undefined;
+
+    setTimeout(() => {
+        sendEmail({
+            email: updatedUser.email,
+            subject: 'Account Permissions Updated 🔐',
+            html: roleChangeTemplate({ name: updatedUser.name, role: updatedUser.role })
+        }).catch((error) => {
+            console.error('CRITICAL EMAIL ERROR:', error.message);
+        });
+    }, 0);
     
     res.status(200).json({
         message: `User role updated to ${role}`,

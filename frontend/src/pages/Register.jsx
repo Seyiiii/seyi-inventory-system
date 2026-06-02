@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
 
 
@@ -12,7 +13,8 @@ function Register() {
   const [loading, setLoading] = useState(false);
   
   const navigate = useNavigate();
-
+  const { login } = useAuth();
+  
   const submitHandler = async (e) => {
     e.preventDefault();
     setLoading(true);
@@ -30,7 +32,7 @@ function Register() {
       if (!response.ok) throw new Error(data.message || 'This email is already in use.');
 
       // Save token and redirect on success
-      localStorage.setItem('userInfo', JSON.stringify(data));
+      login(data);
       navigate('/');
       
     } catch (err) {

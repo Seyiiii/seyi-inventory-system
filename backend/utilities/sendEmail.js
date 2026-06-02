@@ -1,4 +1,9 @@
 import nodemailer from 'nodemailer';
+import path from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const sendEmail = async (options) => {
     const transporter = nodemailer.createTransport({
@@ -13,8 +18,15 @@ const sendEmail = async (options) => {
         from: `"Seyi Inventory System" <${process.env.EMAIL_USER}>`,
         to: options.email,
         subject: options.subject,
-        text: options.text || '',
-        html: options.html || ''
+        text: options.text,
+        html: options.html,
+        attachments: [
+            {
+                filename: 'logo.png',
+                path: path.join(__dirname, '../assets/logo.png'),
+                cid: 'seyilogo'
+            }
+        ]
     };
 
     await transporter.sendMail(mailOptions);

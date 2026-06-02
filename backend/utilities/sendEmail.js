@@ -1,17 +1,19 @@
 import nodemailer from 'nodemailer';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import dns from 'dns';
+
+dns.getDefaultResultOrder('ipv4first');
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const sendEmail = async (options) => {
-    console.log("📧 Attempting to send email to:", options.email);
-    console.log("👤 Using Gmail Account:", process.env.EMAIL_USER);
-    console.log("🔑 Password Length:", process.env.EMAIL_PASS ? process.env.EMAIL_PASS.length : 'MISSING!');
-
+  
     const transporter = nodemailer.createTransport({
-        service: 'gmail',
+        host: 'smtp.gmail.com',
+        port: 465,
+        secure: true,
         auth: {
             user: process.env.EMAIL_USER,
             pass: process.env.EMAIL_PASS

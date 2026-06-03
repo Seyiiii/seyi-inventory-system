@@ -120,7 +120,7 @@ export const updateUserRole = asyncHandler(async (req, res) => {
         sendEmail({
             email: updatedUser.email,
             subject: 'Account Permissions Updated 🔐',
-            html: roleChangeTemplate({ name: updatedUser.name, role: updatedUser.role })
+            html: roleUpdateTemplate({ name: updatedUser.name, role: updatedUser.role })
         }).catch((error) => {
             console.error('CRITICAL EMAIL ERROR:', error.message);
         });

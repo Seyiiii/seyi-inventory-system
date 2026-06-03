@@ -13,7 +13,7 @@ export const welcomeTemplate = ({ name, role }) => {
                     <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
                         <tr>
                             <td align="center" style="background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); padding: 40px 20px; text-align: center;">
-                                <img src="https://seyi-inventory.onrender.com/logo.png" alt="Logo" width="64" height="64" style="display: block; width: 64px; height: 64px; border-radius: 50%; border: 3px solid #2f81f7; background-color: #ffffff; margin: 0 auto 16px auto;" />
+                                <img src="https://seyi-inventory-system.vercel.app/logo.png" alt="Logo" width="64" height="64" style="display: block; width: 64px; height: 64px; border-radius: 50%; border: 3px solid #2f81f7; background-color: #ffffff; margin: 0 auto 16px auto;" />
                                 <h1 style="margin: 0; color: #ffffff; font-size: 28px; font-weight: 800; letter-spacing: -0.5px;">SEYI<span style="color: #2f81f7;">INVENTORY</span></h1>
                             </td>
                         </tr>
@@ -71,7 +71,7 @@ export const orderReceiptTemplate = ({ name, order }) => {
                     <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
                         <tr>
                             <td align="center" style="background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); padding: 40px 20px;">
-                                <img src="https://seyi-inventory.onrender.com/logo.png" alt="Logo" width="64" height="64" style="display: block; border-radius: 50%; border: 3px solid #2f81f7; background-color: #ffffff; margin: 0 auto 16px auto;" />
+                                <img src="https://seyi-inventory-system.vercel.app/logo.png" alt="Logo" width="64" height="64" style="display: block; border-radius: 50%; border: 3px solid #2f81f7; background-color: #ffffff; margin: 0 auto 16px auto;" />
                                 <h1 style="margin: 0; color: #ffffff; font-size: 24px; font-weight: 800;">Order Confirmed! ✅</h1>
                                 <p style="margin: 8px 0 0; color: #7d8590; font-size: 15px;">Thank you for your purchase, ${name.split(' ')[0]}.</p>
                             </td>
@@ -116,7 +116,7 @@ export const roleUpdateTemplate = ({ name, role }) => {
                     <table width="100%" max-width="600" border="0" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px rgba(0,0,0,0.05);">
                         <tr>
                             <td align="center" style="background: linear-gradient(135deg, #0d1117 0%, #161b22 100%); padding: 30px 20px;">
-                                <img src="https://seyi-inventory.onrender.com/logo.png" alt="Logo" width="48" height="48" style="display: block; border-radius: 50%; border: 2px solid #2f81f7; background-color: #ffffff; margin: 0 auto 12px auto;" />
+                                <img src="https://seyi-inventory-system.vercel.app/logo.png" alt="Logo" width="48" height="48" style="display: block; border-radius: 50%; border: 2px solid #2f81f7; background-color: #ffffff; margin: 0 auto 12px auto;" />
                                 <h1 style="margin: 0; color: #ffffff; font-size: 22px;">Account Permissions Updated</h1>
                             </td>
                         </tr>

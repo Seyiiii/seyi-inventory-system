@@ -10,8 +10,9 @@ import Shipping from "./pages/Shipping";
 import Payment from "./pages/Payment";
 import PlaceOrder from "./pages/PlaceOrder";
 import MyOrders from "./pages/MyOrders";
-import OrderSuccess from "./pages/OderSuccess";
-import AdminDashboard from "./pages/AdminDashboard"; // 👈 ADD
+import OrderSuccess from "./pages/OrderSuccess";
+import AdminDashboard from "./pages/AdminDashboard";
+import ProtectedRoute from "./components/ProtectedRoute";
 
 function App() {
   return (
@@ -20,17 +21,50 @@ function App() {
         <Navbar />
         <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
           <Routes>
+            {/* Public Storefront Routes */}
             <Route path="/" element={<Home />} />
             <Route path="/product/:id" element={<ProductDetails />} />
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
-            <Route path="/cart" element={<Cart />} />
-            <Route path="/checkout" element={<Shipping />} />
-            <Route path="/payment" element={<Payment />} />
-            <Route path="/placeorder" element={<PlaceOrder />} />
-            <Route path="/my-orders" element={<MyOrders/>} />
-            <Route path="/order-success/:orderId" element={<OrderSuccess />} />
-            <Route path="/admin" element={<AdminDashboard />} /> {/* 👈 ADD */}
+            
+            {/* Protected Customer Routes */}
+            <Route path="/cart" element={
+              <ProtectedRoute>
+                <Cart />
+              </ProtectedRoute>
+            } />
+            <Route path="/checkout" element={
+              <ProtectedRoute>
+                <Shipping />
+              </ProtectedRoute>
+            } />
+            <Route path="/payment" element={
+              <ProtectedRoute>
+                <Payment />
+              </ProtectedRoute>
+            } />
+            <Route path="/placeorder" element={
+              <ProtectedRoute>
+                <PlaceOrder />
+              </ProtectedRoute>
+            } />
+            <Route path="/my-orders" element={
+              <ProtectedRoute>
+                <MyOrders />
+              </ProtectedRoute>
+            } />
+            <Route path="/order-success/:orderId" element={
+              <ProtectedRoute>
+                <OrderSuccess />
+              </ProtectedRoute>
+            } />
+
+            {/* Protected Staff & Admin Console */}
+            <Route path="/admin" element={
+              <ProtectedRoute allowedRoles={['super_admin', 'admin', 'manager', 'storekeeper']}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
           </Routes>
         </main>
       </BrowserRouter>

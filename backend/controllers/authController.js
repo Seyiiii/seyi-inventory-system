@@ -14,7 +14,7 @@ const generateToken = (id) => {
 
 
 export const registerUser = asyncHandler(async (req, res) => {
-    const { name, email, password, role } = req.body;
+    const { name, email, password } = req.body;
 
     if (!name || !email || !password) {
         res.status(400);
@@ -24,14 +24,14 @@ export const registerUser = asyncHandler(async (req, res) => {
     const userExists = await User.findOne({ email });
     if (userExists) {
         res.status(400);
-        throw new Error('"User with this email already exists');
+        throw new Error('User with this email already exists');
     }
 
     const user = await User.create({
         name,
         email,
         password,
-        role: role || 'user'
+        role: 'user'
     });
 
     if (user) {
@@ -86,7 +86,14 @@ export const loginUser = asyncHandler(async (req, res) => {
 });
 
 export const getAllUsers = asyncHandler(async (req, res) => {
-    const users = await User.find({}).select('-password')
+
+    let query = {};
+
+    if (req.user.role === 'admin') {
+        query = { role: { $ne: 'super_admin' } };
+    }
+
+    const users = await User.find(query).select('-password')
         .sort({ createdAt: -1 });
 
     res.status(200).json({
@@ -97,7 +104,9 @@ export const getAllUsers = asyncHandler(async (req, res) => {
 
 export const updateUserRole = asyncHandler(async (req, res) => {
     const { role } = req.body;
-    const validRoles = ['user', 'storekeeper', 'manager', 'admin'];
+    const validRoles = req.user.role === 'super_admin'
+    ? ['user', 'storekeeper', 'manager', 'admin', 'super_admin']
+    : ['user', 'storekeeper', 'manager', 'admin'];
 
     if (!validRoles.includes(role)) {
         res.status(400);
@@ -111,6 +120,11 @@ export const updateUserRole = asyncHandler(async (req, res) => {
         throw new Error('User not found');
     }
 
+    if (user.role === 'super_admin' && req.user.role !== 'super_admin') {
+        res.status(403);
+        throw new Error('Access denied: Cannot modify Super Admin account');
+    }
+
     user.role = role;
     const updatedUser = await user.save();
 
@@ -122,7 +136,7 @@ export const updateUserRole = asyncHandler(async (req, res) => {
             subject: 'Account Permissions Updated 🔐',
             html: roleUpdateTemplate({ name: updatedUser.name, role: updatedUser.role })
         }).catch((error) => {
-            console.error('CRITICAL EMAIL ERROR:', error.message);
+            console.error('Role update email failed:', error.message);
         });
     }, 0);
     

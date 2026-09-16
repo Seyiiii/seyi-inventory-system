@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiRequest } from '../utils/api';
 
 function ProductDetails() {
   const { id } = useParams();
@@ -19,11 +20,11 @@ function ProductDetails() {
   useEffect(() => {
     const fetchSingleProduct = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
-        const data = await response.json();
+        const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/products/${id}`);
         setProduct(data.product);
-        setLoading(false);
       } catch (error) {
+        setError(error.message);
+      } finally {
         setLoading(false);
       }
     };
@@ -42,16 +43,13 @@ function ProductDetails() {
     }
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
+      await apiRequest(`${import.meta.env.VITE_API_URL}/api/cart`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userInfo.token}`,
         },
         body: JSON.stringify({ productId: id, quantity: Number(qty) }), // Send the selected quantity
       });
-
-      if (!response.ok) throw new Error('Failed to add item to cart');
 
       // Show success message instead of redirecting
       setShowSuccess(true);
@@ -84,13 +82,40 @@ function ProductDetails() {
         </div>
       )}
 
-      <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm flex flex-col md:flex-row gap-8">
-        <div className="flex-1">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
-          <p className="text-gray-500 text-sm mb-6">SKU: {product.sku}</p>
-          <h2 className="text-3xl font-bold text-green-600 mb-6">NGN {product.price.toLocaleString()}</h2>
-          <p className="text-gray-700 leading-relaxed mb-8">{product.description}</p>
-        </div>
+     <div className="bg-white border border-gray-200 p-8 rounded-2xl shadow-sm flex flex-col lg:flex-row gap-8">
+  {/* Left: Product Image */}
+  <div className="w-full lg:w-80 flex items-center justify-center bg-gray-50 rounded-xl overflow-hidden border border-gray-100 min-h-[280px]">
+    {product.image ? (
+      <img
+        src={product.image}
+        alt={product.name}
+        className="w-full h-72 object-contain p-4"
+        onError={(e) => {
+          e.target.style.display = 'none';
+        }}
+      />
+    ) : (
+      <div className="flex flex-col items-center justify-center text-gray-400 p-8">
+        <span className="text-6xl mb-2">📦</span>
+        <span className="text-xs font-medium">No Image Uploaded</span>
+      </div>
+    )}
+  </div>
+
+  {/* Middle: Product Info */}
+  <div className="flex-1">
+    <h1 className="text-3xl font-bold text-gray-900 mb-2">{product.name}</h1>
+    <div className="flex items-center gap-3 mb-4">
+      <span className="text-gray-500 text-sm">SKU: {product.sku}</span>
+      {product.category_id && (
+        <span className="bg-blue-50 text-blue-700 text-xs px-2.5 py-0.5 rounded-full font-medium">
+          {typeof product.category_id === 'object' ? product.category_id.name : product.category_id}
+        </span>
+      )}
+    </div>
+    <h2 className="text-3xl font-bold text-green-600 mb-6">NGN {product.price.toLocaleString()}</h2>
+    <p className="text-gray-700 leading-relaxed mb-8">{product.description}</p>
+  </div>
 
         <div className="w-full md:w-72">
           <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 shadow-sm">

@@ -7,12 +7,13 @@ import {
     markedAsDelivered
 } from '../controllers/orderController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
+import { orderLimiter } from '../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
 router.get('/orders/my-orders', protect, getMyOrders);
 router.get('/orders/all', protect, authorize('super_admin', 'admin', 'manager'), getAllOrders);
-router.post('/orders', protect, createOrder);
+router.post('/orders', protect, orderLimiter, createOrder);
 router.patch('/orders/:id/deliver', protect, authorize('super_admin', 'admin'), markedAsDelivered);
 router.get('/orders/:id', protect, getOrderById);
 

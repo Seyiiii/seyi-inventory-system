@@ -1,7 +1,8 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
+import { apiRequest } from '../utils/api';
 
 // ── API base: dynamic for local testing and live deployment
 const API = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
@@ -79,6 +80,24 @@ const Input = ({ ...props }) => (
     <input className="bg-[#0d1117] border border-[#21262d] rounded-lg px-3 py-2 text-[13px] text-[#e6edf3] focus:border-[#2f81f7] focus:ring-1 focus:ring-[#2f81f7] outline-none transition-colors w-full placeholder:text-[#7d8590]" {...props} />
 );
 
+function ConfirmModal({ isOpen, title, message, onConfirm, onCancel, confirmText = "Confirm" }) {
+    if (!isOpen) return null;
+    return (
+        <div className="fixed inset-0 bg-[#010409]/80 backdrop-blur-sm z-[300] flex items-center justify-center p-4">
+            <div className="bg-[#161b22] border border-[#21262d] rounded-xl w-full max-sm flex flex-col overflow-hidden shadow-2xl">
+                <div className="p-6">
+                    <h3 className="text-[16px] font-bold text-[#e6edf3] mb-2">{title}</h3>
+                    <p className="text-[13px] text-[#7d8590] leading-relaxed m-0">{message}</p>
+                </div>
+                <div className="flex gap-3 p-5 border-t border-[#21262d] bg-white/2 shrink-0">
+                    <button className="flex-1 bg-white/5 border border-[#21262d] text-[#e6edf3] py-2 rounded-lg text-[12px] font-bold hover:bg-white/10 transition-colors" onClick={onCancel}>Cancel</button>
+                    <button className="flex-1 bg-[#f85149] text-white border border-[#f85149] py-2 rounded-lg text-[12px] font-bold hover:bg-[#d73a49] transition-colors" onClick={onConfirm}>{confirmText}</button>
+                </div>
+            </div>
+        </div>
+    );
+}
+
 /* ══════════════════════════════════
    OVERVIEW / STATS
 ══════════════════════════════════ */
@@ -89,13 +108,21 @@ function StatsSection({ token }) {
     const [err, setErr] = useState(null);
 
     useEffect(() => {
-        const h = { Authorization: `Bearer ${token}` };
-        Promise.all([
-            fetch(`${API}/products/stats`, { headers: h }).then(r => r.json()),
-            fetch(`${API}/orders/all`, { headers: h }).then(r => r.json()),
-        ]).then(([p, o]) => {
-            setStats(p); setOData(o); setLoad(false);
-        }).catch(() => { setErr(`Network error — check connection to backend.`); setLoad(false); });
+        const fetchStats = async () => {
+            try {
+                const [p, o] = await Promise.all([
+                    apiRequest(`${API}/products/stats`),
+                    apiRequest(`${API}/orders/all`),
+                ]);
+                setStats(p); 
+                setOData(o);
+            } catch (error) {
+                setErr(error.message || `Network error — check connection to backend.`);
+            } finally {
+                setLoad(false);
+            }
+        };
+        fetchStats();
     }, [token]);
 
     if (loading) return <Spinner />;
@@ -168,19 +195,29 @@ function OrdersSection({ token, isAdmin }) {
     const [search, setSrch] = useState('');
 
     useEffect(() => {
-        fetch(`${API}/orders/all`, { headers: { Authorization: `Bearer ${token}` } })
-            .then(r => r.json()).then(d => { setOrders(d.orders || []); setLoad(false); })
-            .catch(() => setLoad(false));
+        const fetchOrders = async () => {
+            try {
+                const data = await apiRequest(`${API}/orders/all`);
+                setOrders(data.orders || []);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoad(false);
+            }
+        };
+        fetchOrders();
     }, [token]);
 
     const markDelivered = async id => {
         setMark(id);
         try {
-            const res = await fetch(`${API}/orders/${id}/deliver`, { method: 'PATCH', headers: { Authorization: `Bearer ${token}` } });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
+            const data = await apiRequest(`${API}/orders/${id}/deliver`, { method: 'PATCH' });
             setOrders(prev => prev.map(o => o._id === id ? data.order : o));
-        } catch (e) { alert(e.message); } finally { setMark(null); }
+        } catch (e) { 
+            alert(e.message); 
+        } finally { 
+            setMark(null); 
+        }
     };
 
     const filtered = orders.filter(o =>
@@ -247,36 +284,54 @@ function UsersSection({ token, currentUser }) {
     const [loading, setLoad] = useState(true);
     const [updating, setUpd] = useState(null);
     const [deleting, setDel] = useState(null);
+    const [confirmDel, setConfirmDel] = useState(null);
     const [search, setSrch] = useState('');
     const [roleFilter, setRF] = useState('all');
     const [page, setPage] = useState(1);
     const PER = 10;
 
     useEffect(() => {
-        fetch(`${API}/auth/users`, { headers: { Authorization: `Bearer ${token}` } })
-            .then(r => r.json()).then(d => { setUsers(d.users || []); setLoad(false); })
-            .catch(() => setLoad(false));
+        const fetchUsers = async () => {
+            try {
+                const data = await apiRequest(`${API}/auth/users`);
+                setUsers(data.users || []);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoad(false);
+            }
+        };
+        fetchUsers();
     }, [token]);
 
     const changeRole = async (uid, role) => {
         setUpd(uid);
         try {
-            const res = await fetch(`${API}/auth/users/${uid}/role`, { method: 'PUT', headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` }, body: JSON.stringify({ role }) });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
+            const data = await apiRequest(`${API}/auth/users/${uid}/role`, { 
+                method: 'PUT', 
+                headers: { 'Content-Type': 'application/json' }, 
+                body: JSON.stringify({ role }) 
+            });
             setUsers(prev => prev.map(u => u._id === uid ? data.user : u));
-        } catch (e) { alert(e.message); } finally { setUpd(null); }
+        } catch (e) { 
+            alert(e.message); 
+        } finally { 
+            setUpd(null); 
+        }
     };
 
-    const deleteUser = async uid => {
-        if (!window.confirm('Delete this user permanently?')) return;
+   const deleteUser = async () => {
+        const uid = confirmDel;
+        setConfirmDel(null);
         setDel(uid);
         try {
-            const res = await fetch(`${API}/auth/users/${uid}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-            const d = await res.json();
-            if (!res.ok) throw new Error(d.message);
+            await apiRequest(`${API}/auth/users/${uid}`, { method: 'DELETE' });
             setUsers(prev => prev.filter(u => u._id !== uid));
-        } catch (e) { alert(e.message); } finally { setDel(null); }
+        } catch (e) { 
+            alert(e.message); 
+        } finally { 
+            setDel(null); 
+        }
     };
 
     const filtered = users.filter(u => {
@@ -292,8 +347,16 @@ function UsersSection({ token, currentUser }) {
 
     if (loading) return <Spinner />;
 
-    return (
+   return (
         <div className="flex flex-col gap-5">
+            <ConfirmModal 
+                isOpen={!!confirmDel} 
+                title="Revoke System Access?" 
+                message="This user will be permanently deleted from the system and their access will be revoked immediately. This action cannot be undone."
+                confirmText="Revoke Access"
+                onCancel={() => setConfirmDel(null)} 
+                onConfirm={deleteUser} 
+            />
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                     { label: 'Total Accounts', val: users.length, color: '#2f81f7' },
@@ -363,7 +426,7 @@ function UsersSection({ token, currentUser }) {
                                         </td>
                                         <td className="px-5 py-3 align-middle text-right">
                                             {canMod ? (
-                                                <button className="bg-[#f85149]/10 text-[#f85149] border border-[#f85149]/25 hover:bg-[#f85149]/20 px-3 py-1.5 rounded-md text-[11px] font-bold transition-colors disabled:opacity-50" disabled={deleting === u._id} onClick={() => deleteUser(u._id)}>
+                                                <button className="bg-[#f85149]/10 text-[#f85149] border border-[#f85149]/25 hover:bg-[#f85149]/20 px-3 py-1.5 rounded-md text-[11px] font-bold transition-colors disabled:opacity-50" disabled={deleting === u._id} onClick={() => setConfirmDel(u._id)}>
                                                     {deleting === u._id ? 'Removing...' : 'Revoke Access'}
                                                 </button>
                                             ) : <span className="text-[11px] text-[#7d8590]">🔒 Protected</span>}
@@ -397,6 +460,7 @@ function ProductsSection({ token }) {
     const [cats, setCats] = useState([]);
     const [loading, setLoad] = useState(true);
     const [deleting, setDel] = useState(null);
+    const [confirmDel, setConfirmDel] = useState(null);
     const [search, setSrch] = useState('');
     const [modal, setModal] = useState(null);
     const [saving, setSaving] = useState(false);
@@ -407,12 +471,21 @@ function ProductsSection({ token }) {
     const F = (k, v) => setForm(p => ({ ...p, [k]: v }));
 
     useEffect(() => {
-        const h = { Authorization: `Bearer ${token}` };
-        Promise.all([
-            fetch(`${API}/products?limit=200`, { headers: h }).then(r => r.json()),
-            fetch(`${API}/categories`, { headers: h }).then(r => r.json()),
-        ]).then(([p, c]) => { setProd(p.products || []); setCats(c.categories || c || []); setLoad(false); })
-          .catch(() => setLoad(false));
+        const fetchProductData = async () => {
+            try {
+                const [p, c] = await Promise.all([
+                    apiRequest(`${API}/products?limit=200`),
+                    apiRequest(`${API}/categories`),
+                ]);
+                setProd(p.products || []);
+                setCats(c.categories || c || []);
+            } catch (err) {
+                console.error(err);
+            } finally {
+                setLoad(false);
+            }
+        };
+        fetchProductData();
     }, [token]);
 
     const openAdd = () => { setFErr(null); setForm(empty); setModal('add'); };
@@ -427,31 +500,50 @@ function ProductsSection({ token }) {
             Object.entries(form).forEach(([k, v]) => { if (k !== 'imageFile' && v !== '') fd.append(k, v); });
             if (form.imageFile) fd.append('image', form.imageFile);
             
-            const res = await fetch(isEdit ? `${API}/products/${modal._id}` : `${API}/products`, { method: isEdit ? 'PATCH' : 'POST', headers: { Authorization: `Bearer ${token}` }, body: fd });
-            const data = await res.json();
-            if (!res.ok) throw new Error(data.message);
+            const data = await apiRequest(isEdit ? `${API}/products/${modal._id}` : `${API}/products`, { 
+                method: isEdit ? 'PATCH' : 'POST', 
+                body: fd 
+            });
             
             if (isEdit) setProd(prev => prev.map(p => p._id === modal._id ? data.product : p));
             else setProd(prev => [data.product, ...prev]);
             close();
-        } catch (e) { setFErr(e.message); } finally { setSaving(false); }
+        } catch (e) { 
+            setFErr(e.message); 
+        } finally { 
+            setSaving(false); 
+        }
     };
 
-    const del = async id => {
-        if (!window.confirm('Delete this product?')) return;
+  const del = async () => {
+        const id = confirmDel;
+        setConfirmDel(null);
         setDel(id);
         try {
-            const res = await fetch(`${API}/products/${id}`, { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } });
-            if (!res.ok) throw new Error('Failed');
+            await apiRequest(`${API}/products/${id}`, { method: 'DELETE' });
             setProd(prev => prev.filter(p => p._id !== id));
-        } catch (e) { alert(e.message); } finally { setDel(null); }
+        } catch (e) { 
+            alert(e.message); 
+        } finally { 
+            setDel(null); 
+        }
     };
 
     const filtered = products.filter(p => p.name?.toLowerCase().includes(search.toLowerCase()) || p.sku?.toLowerCase().includes(search.toLowerCase()));
     if (loading) return <Spinner />;
 
+   if (loading) return <Spinner />;
+
     return (
         <div className="flex flex-col gap-4">
+            <ConfirmModal 
+                isOpen={!!confirmDel} 
+                title="Delete Inventory Asset?" 
+                message="This product will be permanently removed from the catalogue. This action cannot be undone."
+                confirmText="Delete Asset"
+                onCancel={() => setConfirmDel(null)} 
+                onConfirm={del} 
+            />
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
                 <p className="text-[13px] text-[#7d8590] m-0 font-medium">{products.length} items in catalogue</p>
                 <div className="flex gap-2.5 w-full sm:w-auto">
@@ -494,7 +586,7 @@ function ProductsSection({ token }) {
                                     <td className="px-5 py-3 align-middle text-center">
                                         <div className="flex justify-center gap-2">
                                             <button className="bg-white/5 border border-[#21262d] text-[#e6edf3] px-3 py-1.5 rounded-md text-[11px] font-bold hover:bg-white/10 transition-colors" onClick={() => openEdit(p)}>Edit</button>
-                                            <button className="bg-[#f85149]/10 text-[#f85149] border border-[#f85149]/25 hover:bg-[#f85149]/20 px-3 py-1.5 rounded-md text-[11px] font-bold transition-colors disabled:opacity-50" disabled={deleting === p._id} onClick={() => del(p._id)}>{deleting === p._id ? '...' : 'Delete'}</button>
+                                            <button className="bg-[#f85149]/10 text-[#f85149] border border-[#f85149]/25 hover:bg-[#f85149]/20 px-3 py-1.5 rounded-md text-[11px] font-bold transition-colors disabled:opacity-50" disabled={deleting === p._id} onClick={() => setConfirmDel(p._id)}>{deleting === p._id ? '...' : 'Delete'}</button>
                                         </div>
                                     </td>
                                 </tr>
@@ -757,11 +849,22 @@ function AuditLogsSection({ token }) {
    MAIN SHELL
 ══════════════════════════════════ */
 export default function AdminDashboard() {
-    const { userInfo } = useAuth();
+    const { userInfo, logout } = useAuth();
     const navigate = useNavigate();
     const role = userInfo?.role;
 
     const [isHovered, setIsHovered] = useState(false);
+    const [userMenuOpen, setUserMenuOpen] = useState(false);
+    const userMenuRef = useRef(null);
+
+    // Close user menu on outside click
+    useEffect(() => {
+        function handleClickOutside(e) {
+            if (userMenuRef.current && !userMenuRef.current.contains(e.target)) setUserMenuOpen(false);
+        }
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
     const [mobileOpen, setMobileOpen] = useState(false);
     const [isMobile, setIsMobile] = useState(window.innerWidth <= 768);
 
@@ -803,12 +906,14 @@ export default function AdminDashboard() {
                 onClick={() => setMobileOpen(false)}
             />
 
+            <div className="hidden md:block w-17 shrink-0" />
+
             {/* ── SIDEBAR ── */}
             <aside
                 onMouseEnter={() => !isMobile && setIsHovered(true)}
                 onMouseLeave={() => !isMobile && setIsHovered(false)}
-                className={`bg-[#161b22] border-r border-[#21262d] h-full flex flex-col transition-all duration-300 ease-in-out shrink-0 z-50 fixed md:relative overflow-x-hidden ${
-                    isOpen ? 'w-64 shadow-[8px_0_32px_rgba(0,0,0,0.6)] md:shadow-none' : (isMobile ? 'w-0 border-r-0' : 'w-17')
+                className={`bg-[#161b22] border-r border-[#21262d] h-full flex flex-col transition-all duration-300 ease-in-out shrink-0 z-50 fixed left-0 top-0 overflow-x-hidden ${
+                    isOpen ? 'w-64 shadow-[8px_0_32px_rgba(0,0,0,0.6)]' : (isMobile ? 'w-0 border-r-0' : 'w-17')
                 }`}
             >
                 {/* Logo Area */}
@@ -862,14 +967,44 @@ export default function AdminDashboard() {
                 </div>
 
                 {/* User Footer Component */}
-                <div className="p-3 border-t border-[#21262d] shrink-0">
-                    <div className="flex items-center gap-2.5 p-2 rounded-lg bg-white/4 border border-[#21262d] overflow-hidden whitespace-nowrap">
+               {/* User Footer Component */}
+                <div className="p-3 border-t border-[#21262d] shrink-0 relative" ref={userMenuRef}>
+                    <div 
+                        onClick={() => setUserMenuOpen(!userMenuOpen)}
+                        className="flex items-center gap-2.5 p-2 rounded-lg bg-white/4 border border-[#21262d] hover:bg-white/10 transition-colors overflow-hidden whitespace-nowrap cursor-pointer select-none"
+                    >
                         <Avatar name={userInfo.name} size={32} />
                         <div className={`transition-opacity duration-300 flex flex-col justify-center ${isOpen ? 'opacity-100 w-32.5' : 'opacity-0 w-0'}`}>
                             <span className="text-[13px] font-semibold text-[#e6edf3] truncate">{userInfo.name}</span>
                             <RolePill role={role} />
                         </div>
                     </div>
+
+                    {/* Pop-up Dropdown Menu */}
+                    {userMenuOpen && isOpen && (
+                        <div className="absolute bottom-[calc(100%-8px)] left-3 w-56 bg-[#161b22] border border-[#30363d] rounded-xl shadow-[0_8px_32px_rgba(0,0,0,0.8)] py-2 z-[200]">
+                            <div className="px-4 py-3 border-b border-[#21262d]">
+                                <p className="font-bold text-[13px] text-[#e6edf3] truncate">{userInfo.name}</p>
+                                <p className="text-[11px] text-[#7d8590] truncate">{userInfo.email}</p>
+                            </div>
+
+                            <div className="py-1">
+                                <button disabled className="w-full text-left px-4 py-2 text-[12px] text-[#7d8590] opacity-50 cursor-not-allowed flex items-center justify-between">
+                                    <span>⚙️ Profile Settings</span>
+                                    <span className="text-[9px] bg-white/10 px-1.5 py-0.5 rounded font-bold uppercase">Soon</span>
+                                </button>
+                                <button onClick={() => { setUserMenuOpen(false); navigate('/my-orders'); }} className="w-full text-left px-4 py-2 text-[12px] text-[#e6edf3] hover:bg-[#2f81f7]/10 hover:text-[#2f81f7] transition-colors">
+                                    📦 My Orders
+                                </button>
+                            </div>
+
+                            <div className="border-t border-[#21262d] py-1 mt-1">
+                                <button onClick={() => { logout(); navigate('/'); }} className="w-full text-left px-4 py-2 text-[12px] text-[#f85149] hover:bg-[#f85149]/10 transition-colors font-medium">
+                                    🚪 Logout
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             </aside>
 

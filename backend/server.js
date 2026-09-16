@@ -8,14 +8,19 @@ import cartRoutes from './routes/cartRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import { errorHandler } from './middlewares/errorMiddleware.js';
+import { generalLimiter } from './middlewares/rateLimiter.js';
 
 dotenv.config();
 
 const app = express();
+app.set('trust proxy', 1); // Trust first proxy for rate limiting
 const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json());
+
+// Apply rate limiting to all requests
+app.use('/api', generalLimiter);
 
 app.use('/api', productRoutes);
 app.use('/api', categoryRoutes);

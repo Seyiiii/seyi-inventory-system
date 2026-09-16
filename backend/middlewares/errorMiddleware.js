@@ -19,5 +19,8 @@ export const errorHandler = (err, req, res, next) => {
         message = "Duplicate field value entered.";
     }
 
-    res.status(statusCode).json({ error: message });
+    res.status(statusCode).json({
+        error: message,
+        message: message
+    });
 };

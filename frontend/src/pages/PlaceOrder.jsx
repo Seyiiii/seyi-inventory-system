@@ -1,8 +1,11 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
+import { apiRequest } from '../utils/api';
 
 function PlaceOrder() {
   const navigate = useNavigate();
+  const { refreshCartCount } = useAuth();
   
   const [cart, setCart] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -24,21 +27,16 @@ function PlaceOrder() {
 
     const fetchCart = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
+        const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/cart`, {
           headers: { Authorization: `Bearer ${userInfo?.token}` },
         });
-        const data = await response.json();
         setCart(data.cart);
       } catch (err) {
-        if (err instanceof TypeError) {
-          setError('Network error - please check your internet connection and try again.');
-        } else {
-          setError(err.message)
-        }
-    } finally {
-      setLoading(false);
-    }
-  };
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
 
     fetchCart();
   }, [navigate, paymentMethod, shippingAddress.address, userInfo?.token]);
@@ -49,7 +47,7 @@ function PlaceOrder() {
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders`, {
+      const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/orders`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -64,11 +62,10 @@ function PlaceOrder() {
         }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'Failed to create order');
-
-      // Success! Usually, we redirect to an Order Summary page using the new Order ID
+      // Success! Redirect to Order Summary page and clear active checkout cache
+      refreshCartCount();
+      localStorage.removeItem('shippingAddress');
+      localStorage.removeItem('paymentMethod');
       navigate(`/order-success/${data.order._id}`); 
       
     } catch (err) {

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
+import { apiRequest } from '../utils/api';
 
 
 
@@ -27,15 +28,11 @@ function Register() {
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
+      const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/auth/register`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name, email, password }),
       });
-
-      const data = await response.json();
-
-      if (!response.ok) throw new Error(data.message || 'This email is already in use.');
 
       // Save token and redirect on success
       login(data);

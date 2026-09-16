@@ -17,22 +17,97 @@ export const createOrder = asyncHandler(async (req, res) => {
         throw new Error('Your cart is empty. No Product to Checkout.');
     }
 
-    // Step 1: Check ALL stock BEFORE creating anything
+    // // Step 1: Check ALL stock BEFORE creating anything
+    // for (const item of cart.items) {
+    //     const product = await Product.findById(item.product._id);
+    //     if (product.stock_quantity < item.quantity) {
+    //         res.status(400);
+    //         throw new Error(`Sorry, "${product.name}" only has ${product.stock_quantity} units left in stock!`);
+    //     }
+    // }
+
+    // // Step 2: Safe to create the order
+    // const orderItems = cart.items.map(item => ({
+    //     name: item.product.name,
+    //     quantity: item.quantity,
+    //     image: item.product.image,
+    //     price: item.price,
+    //     product: item.product._id
+    // }));
+
+    // const generatedOrderNumber = 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
+
+    // const order = await Order.create({
+    //     user: userId,
+    //     orderNumber: generatedOrderNumber,
+    //     orderItems,
+    //     shippingAddress,
+    //     paymentMethod,
+    //     totalPrice: cart.totalPrice
+    // });
+
+    // // Step 3: Deduct stock and log movements
+    // for (const item of cart.items) {
+    //     const product = await Product.findById(item.product._id);
+    //     const previous_quantity = product.stock_quantity;
+    //     product.stock_quantity -= item.quantity;
+    //     await product.save();
+
+    //     await StockMovement.create({
+    //         product: product._id,
+    //         user: userId,
+    //         previous_quantity,
+    //         new_quantity: product.stock_quantity,
+    //         quantity_change: item.quantity,
+    //         type: 'OUT'
+    //     });
+    // }
+
+    // Step 1: Autoomatically deduct stock and prepare items
+    const deductedItems = [];
+
     for (const item of cart.items) {
-        const product = await Product.findById(item.product._id);
-        if (product.stock_quantity < item.quantity) {
+        const product = await Product.findOneAndUpdate(
+            {
+                _id: item.product._id,
+                stock_quantity: { $gte: item.quantity }
+            },
+            {
+                $inc: {stock_quantity: -item.quantity }
+            },
+            { returnDocument: 'before' }
+        );
+
+        if (!product) {
+            // Rollback any items that were already deducted
+            for (const rolledBack of deductedItems) {
+                await Product.findByIdAndUpdate(rolledBack.productId, {
+                    $inc: { stock_quantity: rolledBack.quantity }
+                });
+            }
+
             res.status(400);
-            throw new Error(`Sorry, "${product.name}" only has ${product.stock_quantity} units left in stock!`);
+            throw new Error(`Sorry, "${item.product.name}" is no longer available in the requested quantity!`);
         }
+
+        deductedItems.push({
+            productId: item.product._id,
+            name: item.product.name,
+            quantity: item.quantity,
+            image: item.product.image,
+            price: item.price,
+            previous_quantity: product.stock_quantity,
+            new_quantity: product.stock_quantity - item.quantity
+        });
     }
 
-    // Step 2: Safe to create the order
-    const orderItems = cart.items.map(item => ({
-        name: item.product.name,
+    // Step 2: Create the order
+    const orderItems = deductedItems.map(item => ({
+        name: item.name,
         quantity: item.quantity,
-        image: item.product.image,
+        image: item.image,
         price: item.price,
-        product: item.product._id
+        product: item.productId
     }));
 
     const generatedOrderNumber = 'ORD-' + Math.random().toString(36).substring(2, 8).toUpperCase();
@@ -46,18 +121,13 @@ export const createOrder = asyncHandler(async (req, res) => {
         totalPrice: cart.totalPrice
     });
 
-    // Step 3: Deduct stock and log movements
-    for (const item of cart.items) {
-        const product = await Product.findById(item.product._id);
-        const previous_quantity = product.stock_quantity;
-        product.stock_quantity -= item.quantity;
-        await product.save();
-
+    //Step 3: Record await log in StockMovement
+    for (const item of deductedItems) {
         await StockMovement.create({
-            product: product._id,
+            product: item.productId,
             user: userId,
-            previous_quantity,
-            new_quantity: product.stock_quantity,
+            previous_quantity: item.previous_quantity,
+            new_quantity: item.new_quantity,
             quantity_change: item.quantity,
             type: 'OUT'
         });

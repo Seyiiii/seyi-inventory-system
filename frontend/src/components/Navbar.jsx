@@ -101,19 +101,27 @@ function Navbar() {
                       )}
                     </div>
 
-                    <Link to="/my-orders" onClick={() => setDropdownOpen(false)} className="flex items-center px-4 py-2 hover:bg-gray-50 transition-colors text-sm">
-                      📦 My Orders
-                    </Link>
+                   <div className="py-1">
+                      {/* 🌟 Profile Settings Placeholder */}
+                      <button disabled className="w-full text-left flex items-center justify-between px-4 py-2 text-sm text-gray-400 cursor-not-allowed hover:bg-transparent">
+                        <span>⚙️ Profile Settings</span>
+                        <span className="text-[9px] bg-gray-100 text-gray-500 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider border border-gray-200">Soon</span>
+                      </button>
 
-                    {(userInfo.role === 'admin' || userInfo.role === 'storekeeper' || userInfo.role === 'super_admin') && (
-                      <Link to="/admin" onClick={() => setDropdownOpen(false)} className="flex items-center px-4 py-2 hover:bg-gray-50 transition-colors text-sm">
-                        ⚙️ Dashboard
+                      <Link to="/my-orders" onClick={() => setDropdownOpen(false)} className="flex items-center px-4 py-2 hover:bg-gray-50 transition-colors text-sm">
+                        📦 My Orders
                       </Link>
-                    )}
+
+                      {(userInfo.role === 'admin' || userInfo.role === 'storekeeper' || userInfo.role === 'super_admin' || userInfo.role === 'manager') && (
+                        <Link to="/admin" onClick={() => setDropdownOpen(false)} className="flex items-center px-4 py-2 hover:bg-gray-50 transition-colors text-sm">
+                          🎛️ Dashboard
+                        </Link>
+                      )}
+                    </div>
 
                     <hr className="my-1 border-gray-100" />
 
-                    <button onClick={handleLogout} className="w-full text-left flex items-center px-4 py-2 hover:bg-red-50 text-red-600 transition-colors text-sm">
+                    <button onClick={handleLogout} className="w-full text-left flex items-center px-4 py-2 hover:bg-red-50 text-red-600 transition-colors text-sm font-medium">
                       🚪 Logout
                     </button>
                   </div>

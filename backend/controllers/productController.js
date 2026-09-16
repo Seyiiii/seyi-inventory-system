@@ -1,4 +1,6 @@
+import mongoose from 'mongoose';
 import Product from '../models/productModel.js';
+import Category from '../models/categoryModel.js';
 import asyncHandler from "../middlewares/asyncHandler.js";
 
 
@@ -19,7 +21,7 @@ export const createProduct = asyncHandler(async (req, res) => {
 
 export const getAllProducts = asyncHandler(async (req, res) => {
 
-    const { search } = req.query;
+    const { search, category } = req.query;
     const page = Number(req.query.page) || 1;
     const limit =  Number(req.query.limit) || 20;
 
@@ -27,6 +29,23 @@ export const getAllProducts = asyncHandler(async (req, res) => {
 
     if (search) {
         filter.name = { $regex: search, $options: 'i' };
+    }
+
+    if (category && category !== 'All') {
+        if (mongoose.Types.ObjectId.isValid(category)) {
+            filter.category_id = category;
+        } else {
+            // If passed as a c category name (e.g., "Electronics"), we need to find the corresponding category ID first
+            const foundCategory = await Category.findOne({
+                name: { $regex: new RegExp(`^${category}$`, 'i') }
+            });
+            if (foundCategory) {
+                filter.category_id = foundCategory._id;
+            } else {
+                // Category doesn't exist, so return an empty result set
+                filter.category_id = new mongoose.Types.ObjectId()
+            }
+        }
     }
 
     const skip = (page - 1) * limit;
@@ -48,14 +67,15 @@ export const getAllProducts = asyncHandler(async (req, res) => {
         totalPages: totalPages,
         totalProducts: totalProducts,
         products: products
+    });
 });
 
-});
 
 export const getProductById = asyncHandler(async (req, res) => {
     const { id } = req.params;
     const product = await Product.findById(id)
-    .populate('category_id', 'name');
+    .populate('category_id', 'name')
+    .populate('user', 'name email role');
 
     if (!product) {
         res.status(404);

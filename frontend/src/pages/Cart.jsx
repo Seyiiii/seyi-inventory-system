@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { apiRequest } from '../utils/api';
 
 function Cart() {
   const [cart, setCart] = useState(null);
@@ -10,38 +11,28 @@ function Cart() {
   const navigate = useNavigate();
   const { userInfo, refreshCartCount } = useAuth();
 
-  const fetchMyCart = async () => {
+  const fetchMyCart = useCallback(async () => {
     if (!userInfo?.token) { navigate('/login'); return; }
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart`, {
-        headers: { Authorization: `Bearer ${userInfo.token}` }
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message || 'Failed to load cart');
+      const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/cart`);
       setCart(data.cart);
     } catch (err) {
-      if (err instanceof TypeError) {
-        setError('Network error — please check your connection.');
-      } else {
-        setError(err.message);
-      }
+      setError(err.message);
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate, userInfo?.token]);
 
-  useEffect(() => { fetchMyCart(); }, []);
+  useEffect(() => { fetchMyCart(); }, [fetchMyCart]);
 
   // Remove item completely
   const handleRemove = async (productId) => {
     setUpdatingItem(productId);
+    setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/${productId}`, {
+      const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/cart/${productId}`, {
         method: 'DELETE',
-        headers: { Authorization: `Bearer ${userInfo.token}` }
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
       setCart(data.cart);
       refreshCartCount(); // update navbar badge
     } catch (err) {
@@ -55,17 +46,15 @@ function Cart() {
   const handleQuantityChange = async (productId, newQty) => {
     if (newQty < 1) return;
     setUpdatingItem(productId);
+    setError(null);
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/cart/${productId}`, {
+      const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/cart/${productId}`, {
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${userInfo.token}`
         },
         body: JSON.stringify({ quantity: newQty })
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.message);
       setCart(data.cart);
       refreshCartCount();
     } catch (err) {
@@ -108,7 +97,7 @@ function Cart() {
             {cart.items.map((item) => {
               const isUpdating = updatingItem === item.product._id;
               return (
-                <li key={item._id} className={`p-6 transition ${isUpdating ? 'opacity-50' : ''}`}>
+                <li key={item.product?._id || item.product} className={`p-6 transition ${isUpdating ? 'opacity-50' : ''}`}>
                   <div className="flex gap-4">
 
                     {/* Product Image */}

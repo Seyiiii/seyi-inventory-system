@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+import { apiRequest } from '../utils/api';
 
 function Home() {
   const [products, setProducts] = useState([]);
@@ -9,6 +10,7 @@ function Home() {
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [recommended, setRecommended] = useState([]);
   const [recLoading, setRecLoading] = useState(true);
+  const [error, setError] = useState(null);
   
   // --- NEW: MASTER CATEGORY STATE ---
   const [allCategories, setAllCategories] = useState(['All']);
@@ -21,8 +23,7 @@ function Home() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/categories`);
-        const data = await response.json();
+        const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/categories`);
         
         // Extract just the names from the category objects
         const categoryNames = data.categories.map(c => c.name);
@@ -40,9 +41,7 @@ function Home() {
       try {
         const favorites = JSON.parse(localStorage.getItem('favCategories')) || [];
         const topFav = favorites.length > 0 ? favorites[0] : '';
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/products/recommended?category=${topFav}`);
-        if (!response.ok) throw new Error('Failed');
-        const data = await response.json();
+        const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/products/recommended?category=${topFav}`);
         setRecommended(data);
       } catch (error) {
         console.error("Recommendation Error:", error);
@@ -57,23 +56,28 @@ function Home() {
   // Reruns when page OR searchQuery changes
   const fetchInventory = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       // Build URL — include search if there's a query
-      const url = searchQuery
-        ? `${import.meta.env.VITE_API_URL}/api/products?page=${currentPage}&limit=20&search=${encodeURIComponent(searchQuery)}`
-        : `${import.meta.env.VITE_API_URL}/api/products?page=${currentPage}&limit=20`;
+      let url = `${import.meta.env.VITE_API_URL}/api/products?page=${currentPage}&limit=20`;
 
-      const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch inventory');
-      const data = await response.json();
+      if (searchQuery) {
+        url += `&search=${encodeURIComponent(searchQuery)}`;
+      }
+      if (selectedCategory && selectedCategory !== 'All') {
+        url += `&category=${encodeURIComponent(selectedCategory)}`;
+      }
+      
+      const data = await apiRequest(url);
       setProducts(data.products || []);
       setTotalPages(data.totalPages || 1);
     } catch (error) {
+      setError(error.message);
       console.error("Inventory Error:", error);
     } finally {
       setLoading(false);
     }
-  }, [currentPage, searchQuery]);
+  }, [currentPage, searchQuery, selectedCategory]);
 
   useEffect(() => {
     fetchInventory();
@@ -106,9 +110,7 @@ function Home() {
     setCurrentPage(1);
   };
 
-  const filteredProducts = selectedCategory === 'All'
-    ? products
-    : products.filter(p => getCategoryName(p) === selectedCategory);
+  const filteredProducts = products;
 
   const nextPage = () => { if (currentPage < totalPages) setCurrentPage(p => p + 1); };
   const prevPage = () => { if (currentPage > 1) setCurrentPage(p => p - 1); };
@@ -231,6 +233,12 @@ function Home() {
             </h2>
             <p className="text-sm text-gray-500">{filteredProducts.length} products</p>
           </div>
+
+          {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-6">
+              {error}
+            </div>
+          )}
 
           {loading ? (
             <div className="flex justify-center items-center h-64">

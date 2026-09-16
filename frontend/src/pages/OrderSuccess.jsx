@@ -1,27 +1,26 @@
 import { useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { apiRequest } from '../utils/api';
 
 function OrderSuccess() {
   const { orderId } = useParams();
   const [order, setOrder] = useState(null);
   const [loading, setLoading] = useState(true);
-  const userInfo = JSON.parse(localStorage.getItem('userInfo'));
 
   useEffect(() => {
     const fetchOrder = async () => {
       try {
-        const response = await fetch(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}`, {
-          headers: { Authorization: `Bearer ${userInfo?.token}` }
-        });
-        const data = await response.json();
+        const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/orders/${orderId}`);
         setOrder(data.order);
       } catch (err) {
-        console.error(err);
+        console.error("Failed to load order confirmation:", err);
       } finally {
         setLoading(false);
       }
     };
-    fetchOrder();
+    if (orderId) {
+      fetchOrder();
+    }
   }, [orderId]);
 
   if (loading) return (

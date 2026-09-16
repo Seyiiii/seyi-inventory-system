@@ -17,6 +17,7 @@ import {
 } from '../controllers/stockMovementController.js';
 import { protect, authorize } from '../middlewares/authMiddleware.js';
 import upload from '../config/cloudinary.js';
+import { apiWriteLimiter } from '../middlewares/rateLimiter.js';
 
 const router = express.Router();
 
@@ -26,14 +27,14 @@ router.get('/products/recommended', getRecommendations);
 router.get('/stock-movements', protect, authorize('super_admin', 'admin', 'storekeeper'), getAllStockMovements);
 
 router.get('/products', getAllProducts);
-router.post('/products', protect, authorize('super_admin', 'admin', 'storekeeper'), upload.single('image'), createProduct);
+router.post('/products', protect, authorize('super_admin', 'admin', 'storekeeper'), apiWriteLimiter, upload.single('image'), createProduct);
 
-router.post('/products/:id/stock', protect, authorize('super_admin', 'admin', 'storekeeper'), createStockMovement);
+router.post('/products/:id/stock', protect, authorize('super_admin', 'admin', 'storekeeper'), apiWriteLimiter, createStockMovement);
 router.get('/products/:id/price/:currencyCode', getProductPriceInCurrency);
 router.get('/products/:id/stock', protect, authorize('super_admin', 'admin', 'storekeeper'), getProductStockMovements);
 
 router.get('/products/:id', getProductById);
-router.patch('/products/:id', protect, authorize('super_admin', 'admin', 'storekeeper'), upload.single('image'), updatedProduct);
-router.delete('/products/:id', protect, authorize('super_admin', 'admin', 'storekeeper'), deleteProduct);
+router.patch('/products/:id', protect, authorize('super_admin', 'admin', 'storekeeper'), apiWriteLimiter, upload.single('image'), updatedProduct);
+router.delete('/products/:id', protect, authorize('super_admin', 'admin', 'storekeeper'), apiWriteLimiter, deleteProduct);
 
 export default router;

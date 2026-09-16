@@ -14,7 +14,7 @@ export const createCategory = asyncHandler(async (req, res) =>{
 export const getAllCategories = asyncHandler(async (req, res) =>{
     const categories = await Category
     .find().sort({ name: 1})
-    .populate('user', 'user email role')
+    .populate('user', 'name email role')
 
     res.status(200).json({ categories });
 });

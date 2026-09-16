@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import logo from '../assets/logo.png';
+import { apiRequest } from '../utils/api';
 
 
 function Login() {
@@ -22,7 +23,7 @@ function Login() {
     setError(null);
 
     try {
-      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
+      const data = await apiRequest(`${import.meta.env.VITE_API_URL}/api/auth/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -30,23 +31,13 @@ function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Invalid email or password');
-      }
-
       // SUCCESS! Save the user data and JWT token to the browser's local storage
       login(data);      
       // Redirect them back to the Home page
       navigate('/');
       
     } catch (err) {
-        if (err instanceof TypeError) {
-          setError('Network error - please check your internet connection and try again.');
-        } else {
-          setError(err.message)
-        }
+        setError(err.message);
     } finally {
       setLoading(false);
     }
